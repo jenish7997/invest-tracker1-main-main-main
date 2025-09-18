@@ -3,14 +3,6 @@
   <div class="report-header">
     <h1 class="report-title">{{ isAdmin ? 'All Investors Report' : 'My Investment Report' }}</h1>
     <div class="header-buttons">
-      <button class="debug-btn" (click)="debugDataRetrieval()" title="Debug Data Retrieval">
-        <span class="material-icons">bug_report</span>
-        Debug
-      </button>
-      <button class="test-btn" (click)="testInterestRecalculation()" title="Test Interest Recalculation">
-        <span class="material-icons">calculate</span>
-        Test Interest
-      </button>
       <button class="refresh-btn" (click)="refreshReportsManually()" [disabled]="loading" title="Refresh Reports">
         <span class="material-icons">refresh</span>
         Refresh
@@ -76,13 +68,9 @@
         <div class="stat-content">
           <h3>Total Interest</h3>
           <p class="stat-value">{{ report.totalInterest | currency:'INR':'symbol':'1.2-2' }}</p>
-          <div *ngIf="report.monthlyInterestBreakdown.length > 0" class="monthly-breakdown">
-            <small class="breakdown-text">
-              (
-              <span *ngFor="let monthly of report.monthlyInterestBreakdown; let last = last">
-                {{ formatMonthDisplay(monthly.month) }}: {{ monthly.amount | currency:'INR':'symbol':'1.0-0' }} @ {{ (monthly.rate * 100).toFixed(1) }}%<span *ngIf="!last">, </span>
-              </span>
-              )
+          <div *ngIf="report.monthlyInterestBreakdown.length > 0" class="average-return">
+            <small class="average-return-text">
+              Average Return: {{ (report.averageReturnPercentage * 100).toFixed(2) }}%
             </small>
           </div>
         </div>

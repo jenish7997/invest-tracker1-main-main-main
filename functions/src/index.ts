@@ -688,17 +688,27 @@ export const applyMonthlyInterestAndRecalculate = onCall({
         .get();
       
       let balanceAtMonthEnd = 0;
+      let existingInterestForThisMonth = 0;
+      
       transactionsQuery.docs.forEach(transactionDoc => {
         const transaction = transactionDoc.data();
         if (transaction.type === 'invest' || transaction.type === 'deposit' || transaction.type === 'interest') {
           balanceAtMonthEnd += transaction.amount;
+          
+          // Check if this is an existing interest transaction for the same month
+          if (transaction.type === 'interest') {
+            const transactionDate = transaction.date.toDate();
+            if (transactionDate.getFullYear() === year && transactionDate.getMonth() === month) {
+              existingInterestForThisMonth += transaction.amount;
+            }
+          }
         } else if (transaction.type === 'withdraw') {
           balanceAtMonthEnd -= transaction.amount;
         }
       });
 
-      // Only apply interest if there's a positive balance
-      if (balanceAtMonthEnd > 0) {
+      // Only apply interest if there's a positive balance and no existing interest for this month
+      if (balanceAtMonthEnd > 0 && existingInterestForThisMonth === 0) {
         const interestAmount = balanceAtMonthEnd * rate;
         const newBalance = (investor.balance || 0) + interestAmount;
 

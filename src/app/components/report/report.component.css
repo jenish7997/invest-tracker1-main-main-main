@@ -31,49 +31,6 @@
   text-align: center;
 }
 
-.debug-btn {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
-  background-color: #ff9800;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  font-weight: 600;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.debug-btn:hover {
-  background-color: #f57c00;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-}
-
-.test-btn {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
-  background-color: #9c27b0;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  font-weight: 600;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.test-btn:hover {
-  background-color: #7b1fa2;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-}
 
 .refresh-btn {
   display: flex;
@@ -341,16 +298,19 @@
   margin: 0;
 }
 
-.monthly-breakdown {
+.average-return {
   margin-top: 0.5rem;
 }
 
-.breakdown-text {
-  color: #6c757d;
-  font-size: 0.75rem;
-  line-height: 1.4;
-  font-style: italic;
+.average-return-text {
+  color: #4caf50;
+  font-size: 0.85rem;
+  font-weight: 600;
   display: block;
+  background: rgba(76, 175, 80, 0.1);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  text-align: center;
 }
 
 .interest-rate {
