@@ -36,9 +36,12 @@ export class TransactionsComponent implements OnInit {
     this.svc.listTransactionsByInvestor(investorId).subscribe(transactions => {
       console.log('Transactions for investor', investorId, transactions);
       // Filter out interest transactions - only show invest and withdraw
+      // The service already sorts by date and createdAt, so we just filter here
       this.SelectedInvestorTransection = transactions.filter(transaction => 
         transaction.type === 'invest' || transaction.type === 'withdraw' || transaction.type === 'deposit'
       );
+      
+      console.log('Transactions sorted by service (newest first):', this.SelectedInvestorTransection);
     });
   }
 

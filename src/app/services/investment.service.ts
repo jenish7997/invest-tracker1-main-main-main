@@ -156,8 +156,38 @@ export class InvestmentService {
 
   listTransactionsByInvestor(investorId: string): Observable<Transaction[]> {
     const transactionsCollection = collection(this.firestore, 'transactions');
-    const q = query(transactionsCollection, where('investorId', '==', investorId));
-    return collectionData(q, { idField: 'id' }) as Observable<Transaction[]>;
+    const q = query(
+      transactionsCollection, 
+      where('investorId', '==', investorId),
+      orderBy('date', 'desc') // Order by date descending (newest first)
+    );
+    
+    // Return observable that sorts by createdAt as secondary sort
+    return new Observable<Transaction[]>(observer => {
+      collectionData(q, { idField: 'id' }).subscribe({
+        next: (transactions) => {
+          // Cast to Transaction[] and sort by date first, then by createdAt for same-day transactions
+          const typedTransactions = transactions as Transaction[];
+          const sortedTransactions = typedTransactions.sort((a, b) => {
+            const dateA = new Date(a.date);
+            const dateB = new Date(b.date);
+            const dateCompare = dateB.getTime() - dateA.getTime();
+            
+            if (dateCompare === 0) {
+              const createdAtA = a.createdAt ? new Date(a.createdAt) : new Date(0);
+              const createdAtB = b.createdAt ? new Date(b.createdAt) : new Date(0);
+              return createdAtB.getTime() - createdAtA.getTime();
+            }
+            
+            return dateCompare;
+          });
+          
+          observer.next(sortedTransactions);
+        },
+        error: (error) => observer.error(error),
+        complete: () => observer.complete()
+      });
+    });
   }
 
   private formatDateForDisplay(date: Date): string {
