@@ -1,0 +1,42 @@
+<div class="container">
+  <div class="admin-header">
+    <h1>Admin Panel</h1>
+    <button class="logout-btn" (click)="onLogout()">Logout</button>
+  </div>
+
+  <!-- Investors Section -->
+  <section class="card">
+    <h2>Investors</h2>
+    
+    
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>ID</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let inv of investors">
+          <td>{{ inv.name }}</td>
+          <td>{{ inv.id }}</td>
+          <td class="actions-cell">
+            <button 
+              class="interest-btn" 
+              (click)="applyHistoricalInterestToInvestor(inv.id!, inv.name)"
+              [disabled]="isApplyingInterest">
+              Apply Historical Interest
+            </button>
+            <button 
+              class="delete-btn" 
+              (click)="deleteInvestor(inv.id!, inv.name)"
+              [disabled]="isDeleting">
+              {{ isDeleting ? 'Deleting...' : 'Delete' }}
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+</div>

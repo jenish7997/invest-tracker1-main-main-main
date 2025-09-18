@@ -1,0 +1,172 @@
+<div class="report-container">
+  <div class="page-header">
+    <div class="header-content">
+      <h1 class="page-title">
+        <span class="material-icons title-icon">bar_chart</span>
+        Investor Performance Report
+      </h1>
+      <p class="page-subtitle">Generate and view monthly balance reports for investors</p>
+    </div>
+  </div>
+
+  <div class="form-card">
+    <h2 class="form-title">
+      <span class="material-icons">tune</span>
+      Report Parameters
+    </h2>
+    <form (ngSubmit)="run()" [formGroup]="form" class="report-form">
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="investor" class="form-label">
+            <span class="material-icons">person</span>
+            Investor
+          </label>
+          <select id="investor" formControlName="investorId" class="form-select">
+            <option value="">-- Select an Investor --</option>
+            <option *ngFor="let i of investors" [value]="i.id">{{ i.name }}</option>
+          </select>
+          <div *ngIf="form.get('investorId')?.invalid && form.get('investorId')?.touched" class="error-message">
+            Please select an investor.
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="startMonth" class="form-label">
+            <span class="material-icons">date_range</span>
+            Start Month (Optional)
+          </label>
+          <input id="startMonth" type="month" formControlName="startMonthKey" class="form-input">
+        </div>
+
+        <div class="form-group">
+          <label for="endMonth" class="form-label">
+            <span class="material-icons">date_range</span>
+            End Month (Optional)
+          </label>
+          <input id="endMonth" type="month" formControlName="endMonthKey" class="form-input">
+        </div>
+      </div>
+
+      <div class="button-group">
+        <button type="submit" class="submit-btn" [disabled]="form.invalid">
+          <span class="material-icons">analytics</span>
+          Generate Report
+        </button>
+        
+        <button type="button" class="refresh-btn" (click)="refreshData()" [disabled]="!selectedInvestor">
+          <span class="material-icons">refresh</span>
+          Refresh Data
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <div class="report-results">
+    <div *ngIf="rows.length && summary; else emptyState">
+      <!-- Summary Cards -->
+      <div class="summary-cards">
+        <div class="summary-card principal">
+          <div class="card-icon">
+            <span class="material-icons">account_balance</span>
+          </div>
+          <div class="card-content">
+            <h4>Principal Amount</h4>
+            <p class="amount">₹{{ summary.principalAmount | number:'1.2-2' }}</p>
+          </div>
+        </div>
+
+        <div class="summary-card interest">
+          <div class="card-icon">
+            <span class="material-icons">trending_up</span>
+          </div>
+          <div class="card-content">
+            <h4>Total Interest</h4>
+            <p class="amount">₹{{ summary.totalInterest | number:'1.2-2' }}</p>
+            <div class="interest-breakdown" *ngIf="summary.interestByMonth.length">
+              <small>
+                <span *ngFor="let item of summary.interestByMonth; let last = last">
+                  {{ item.month }}: ₹{{ item.amount | number:'1.2-2' }} @ {{ item.rate | number:'1.1-1' }}%<span *ngIf="!last">, </span>
+                </span>
+              </small>
+            </div>
+          </div>
+        </div>
+
+        <div class="summary-card total">
+          <div class="card-icon">
+            <span class="material-icons">savings</span>
+          </div>
+          <div class="card-content">
+            <h4>Grown Capital</h4>
+            <p class="amount">₹{{ summary.grownCapital | number:'1.2-2' }}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Transaction History Table -->
+      <div class="transaction-history">
+        <h3 class="section-title">
+          <span class="material-icons">history</span>
+          Transaction History
+        </h3>
+        
+        <div class="table-container">
+          <table class="transactions-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Description</th>
+                <th>Principal</th>
+                <th>Interest</th>
+                <th>Withdrawal</th>
+                <th>Balance</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let month of rows" class="month-group">
+                <td colspan="6" class="month-header">{{ month.monthKey }}</td>
+              </tr>
+              <tr *ngFor="let transaction of month.transactions" class="transaction-row">
+                <td>{{ transaction.date | date:'dd/MM/yyyy' }}</td>
+                <td>
+                  <span class="transaction-type" [ngClass]="transaction.type.toLowerCase()">
+                    {{ transaction.type }}
+                  </span>
+                  <span *ngIf="transaction.type === 'interest'" class="interest-rate">
+                    ({{ (month.rate * 100) | number:'1.1-1' }}%)
+                  </span>
+                </td>
+                <td>
+                  <span *ngIf="transaction.type === 'invest' || transaction.type === 'deposit'">
+                    ₹{{ transaction.amount | number:'1.2-2' }}
+                  </span>
+                </td>
+                <td>
+                  <span *ngIf="transaction.type === 'interest'">
+                    ₹{{ transaction.amount | number:'1.2-2' }}
+                  </span>
+                </td>
+                <td>
+                  <span *ngIf="transaction.type === 'withdraw'">
+                    ₹{{ transaction.amount | number:'1.2-2' }}
+                  </span>
+                </td>
+                <td class="balance-cell">
+                  <strong>₹{{ month.balance | number:'1.2-2' }}</strong>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <ng-template #emptyState>
+      <div class="empty-state">
+        <span class="material-icons empty-icon">insights</span>
+        <h2>Ready to Generate a Report</h2>
+        <p>Select an investor and click "Generate Report" to view their monthly balance history.</p>
+      </div>
+    </ng-template>
+  </div>
+</div>

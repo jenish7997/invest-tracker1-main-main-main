@@ -1,0 +1,34 @@
+[
+  {
+    "origin": [
+      "http://localhost:4200",
+      "https://localhost:4200",
+      "http://127.0.0.1:4200",
+      "https://127.0.0.1:4200",
+      "http://localhost:3000",
+      "https://localhost:3000",
+      "https://invest-tracker-447ff.web.app",
+      "https://invest-tracker-447ff.firebaseapp.com"
+    ],
+    "method": [
+      "GET",
+      "POST",
+      "PUT",
+      "DELETE",
+      "OPTIONS",
+      "HEAD",
+      "PATCH"
+    ],
+    "maxAgeSeconds": 3600,
+    "responseHeader": [
+      "Content-Type",
+      "Authorization",
+      "X-Requested-With",
+      "Accept",
+      "Origin",
+      "Access-Control-Request-Method",
+      "Access-Control-Request-Headers"
+    ],
+    "allowCredentials": true
+  }
+]

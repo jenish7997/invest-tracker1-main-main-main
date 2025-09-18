@@ -1,0 +1,137 @@
+
+<div class="report-container">
+  <div class="report-header">
+    <h1 class="report-title">{{ isAdmin ? 'All Investors Report' : 'My Investment Report' }}</h1>
+    <button class="refresh-btn" (click)="refreshReportsManually()" [disabled]="loading" title="Refresh Reports">
+      <span class="material-icons">refresh</span>
+      Refresh
+    </button>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="loading" class="loading-message">
+    <div class="loading-spinner">
+      <div class="spinner"></div>
+    </div>
+    <h3>Loading Investment Data...</h3>
+    <p>Please wait while we fetch your investment reports.</p>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="error && !loading" class="error-message">
+    <div class="error-icon">
+      <span class="material-icons">error</span>
+    </div>
+    <h3>Error Loading Data</h3>
+    <p>{{ error }}</p>
+    <button class="retry-btn" (click)="ngOnInit()">
+      <span class="material-icons">refresh</span>
+      Try Again
+    </button>
+  </div>
+
+  <!-- No Data State -->
+  <div *ngIf="!loading && !error && reports.length === 0" class="no-data-message">
+    <div class="no-data-icon">
+      <span class="material-icons">assessment</span>
+    </div>
+    <h3>No Investment Data Available</h3>
+    <p>No investment data is currently available to generate reports. This could be due to:</p>
+    <ul>
+      <li>No investors have been added yet</li>
+      <li>No transactions have been recorded</li>
+      <li>Connection issues with the database</li>
+    </ul>
+  </div>
+
+  <div *ngFor="let report of reports" class="report-card">
+    <div class="report-card-header">
+      <h2 class="investor-name">{{ report.investorName }}</h2>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card principal">
+        <div class="stat-icon">
+          <span class="material-icons">account_balance</span>
+        </div>
+        <div class="stat-content">
+          <h3>Principal Amount</h3>
+          <p class="stat-value">{{ report.principal | currency:'INR':'symbol':'1.2-2' }}</p>
+        </div>
+      </div>
+      <div class="stat-card interest">
+        <div class="stat-icon">
+          <span class="material-icons">trending_up</span>
+        </div>
+        <div class="stat-content">
+          <h3>Total Interest</h3>
+          <p class="stat-value">{{ report.totalInterest | currency:'INR':'symbol':'1.2-2' }}</p>
+          <div *ngIf="report.monthlyInterestBreakdown.length > 0" class="monthly-breakdown">
+            <small class="breakdown-text">
+              (
+              <span *ngFor="let monthly of report.monthlyInterestBreakdown; let last = last">
+                {{ formatMonthDisplay(monthly.month) }}: {{ monthly.amount | currency:'INR':'symbol':'1.0-0' }} @ {{ (monthly.rate * 100).toFixed(1) }}%<span *ngIf="!last">, </span>
+              </span>
+              )
+            </small>
+          </div>
+        </div>
+      </div>
+      <div class="stat-card capital">
+        <div class="stat-icon">
+          <span class="material-icons">savings</span>
+        </div>
+        <div class="stat-content">
+          <h3>Grown Capital</h3>
+          <p class="stat-value">{{ report.grownCapital | currency:'INR':'symbol':'1.2-2' }}</p>
+        </div>
+      </div>
+    </div>
+
+    <div *ngIf="report.transactions.length > 0" class="transactions-section">
+      <h3 class="section-title">Transaction History</h3>
+      <div class="table-container">
+        <table class="transactions-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Description</th>
+              <th>Principal</th>
+              <th>Interest</th>
+              <th>Withdrawal</th>
+              <th>Balance</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let t of report.transactions">
+              <td>{{ t.date }}</td>
+              <td class="transaction-type">{{ t.type }}</td>
+              <td class="amount principal-amount">
+                <span *ngIf="t.type === 'invest' || t.type === 'deposit'">
+                  {{ t.amount | currency:'INR':'symbol':'1.2-2' }}
+                </span>
+              </td>
+              <td class="amount interest-amount">
+                <span *ngIf="t.type === 'interest'">
+                  {{ t.amount | currency:'INR':'symbol':'1.2-2' }}
+                  <small class="interest-rate">({{ getTransactionInterestRate(t.date) }})</small>
+                </span>
+              </td>
+              <td class="amount withdrawal-amount">
+                <span *ngIf="t.type === 'withdraw'">
+                  {{ t.amount | currency:'INR':'symbol':'1.2-2' }}
+                </span>
+              </td>
+              <td class="amount balance-amount">{{ t.balance | currency:'INR':'symbol':'1.2-2' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div *ngIf="report.transactions.length === 0" class="no-transactions">
+      <span class="material-icons">receipt_long</span>
+      <p>No transactions found for this period.</p>
+    </div>
+  </div>
+</div>

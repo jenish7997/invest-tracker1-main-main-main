@@ -1,0 +1,59 @@
+
+<div class="app-container" *ngIf="authService.user$ | async as user; else showLogin">
+  <!-- Top Navigation -->
+  <nav class="top-navbar">
+    <div class="nav-brand">
+      <h1 class="logo">{{ title }}</h1>
+    </div>
+
+    <div class="nav-links">
+      <ng-container *ngIf="isAdmin$ | async">
+        <a routerLink="/add-investor" routerLinkActive="active">
+          <span class="material-icons">person_add</span>
+          <span class="nav-label">Add Investor</span>
+        </a>
+        <a routerLink="/add-money" routerLinkActive="active">
+          <span class="material-icons">attach_money</span>
+          <span class="nav-label">Fund Account</span>
+        </a>
+        <a routerLink="/withdraw" routerLinkActive="active">
+          <span class="material-icons">money_off</span>
+          <span class="nav-label">Withdraw</span>
+        </a>
+        <a routerLink="/transactions" routerLinkActive="active">
+          <span class="material-icons">receipt</span>
+          <span class="nav-label">Transactions</span>
+        </a>
+        <a routerLink="/interest" routerLinkActive="active">
+          <span class="material-icons">trending_up</span>
+          <span class="nav-label">Interest Rates</span>
+        </a>
+        <a routerLink="/admin" routerLinkActive="active" class="admin-link">
+          <span class="material-icons">admin_panel_settings</span>
+          <span class="nav-label">Admin</span>
+        </a>
+      </ng-container>
+
+      <a routerLink="/report" routerLinkActive="active">
+        <span class="material-icons">assessment</span>
+        <span class="nav-label">Reports</span>
+      </a>
+    </div>
+
+    <div class="nav-actions">
+      <button class="logout-btn" (click)="onLogout()">
+        <span class="material-icons">logout</span>
+        Logout
+      </button>
+    </div>
+  </nav>
+
+  <!-- Main Content Area -->
+  <main class="content-area">
+    <router-outlet></router-outlet>
+  </main>
+</div>
+
+<ng-template #showLogin>
+  <router-outlet></router-outlet>
+</ng-template>

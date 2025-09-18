@@ -1,0 +1,69 @@
+<div class="add-money-container">
+  <div class="page-header">
+    <div class="header-content">
+      <h1 class="page-title">
+        <span class="material-icons title-icon">attach_money</span>
+        Fund Account
+      </h1>
+      <p class="page-subtitle">Add funds to an investor's account</p>
+    </div>
+  </div>
+
+  <div class="form-card">
+    <h2 class="form-title">
+      <span class="material-icons">account_balance_wallet</span>
+      Transaction Details
+    </h2>
+
+    <form [formGroup]="transactionForm" (ngSubmit)="onSubmit()" class="transaction-form">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="investor" class="form-label">
+            <span class="material-icons">person</span>
+            Select Investor
+          </label>
+          <select id="investor" formControlName="investorId" class="form-select">
+            <option value="">-- Choose an investor --</option>
+            <option *ngFor="let inv of investors" [value]="inv.id">{{ inv.name }}</option>
+          </select>
+          <div *ngIf="transactionForm.get('investorId')?.invalid && transactionForm.get('investorId')?.touched" class="error-message">
+            <span class="material-icons">error</span>
+            Please select an investor
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="amount" class="form-label">
+            <span class="material-icons">payments</span>
+            Amount
+          </label>
+          <div class="amount-input-wrapper">
+            <span class="currency-symbol">₹</span>
+            <input id="amount" type="number" formControlName="amount" class="form-input amount-input" placeholder="0.00" min="0" step="0.01">
+          </div>
+          <div *ngIf="transactionForm.get('amount')?.invalid && transactionForm.get('amount')?.touched" class="error-message">
+            <span class="material-icons">error</span>
+            Amount must be greater than 0
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="date" class="form-label">
+          <span class="material-icons">calendar_today</span>
+          Transaction Date
+        </label>
+        <input id="date" type="date" formControlName="date" class="form-input">
+        <div *ngIf="transactionForm.get('date')?.invalid && transactionForm.get('date')?.touched" class="error-message">
+          <span class="material-icons">error</span>
+          Please select a valid date
+        </div>
+      </div>
+
+      <button type="submit" class="submit-btn" [disabled]="transactionForm.invalid">
+        <span class="material-icons">save</span>
+        Add Funds
+      </button>
+    </form>
+  </div>
+</div>

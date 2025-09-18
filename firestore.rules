@@ -1,0 +1,38 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper function to check if the user is an admin
+    function isAdmin() {
+      return request.auth != null && request.auth.token.admin == true;
+    }
+
+    // INVESTORS Collection
+    match /investors/{investorId} {
+      // Admins can read the full list of investors (for the report page)
+      allow list: if isAdmin();
+      // An admin can get any investor's data
+      // A user can ONLY get their own data (by matching their UID to the document ID)
+      allow get: if isAdmin() || (request.auth != null && request.auth.uid == investorId);
+      // Only admins can create, update, or delete investors
+      allow write: if isAdmin();
+    }
+
+    // TRANSACTIONS Collection  
+    match /transactions/{transactionId} {
+      // Admins can read all transactions
+      // Regular users can read transactions where they are the investor
+      allow read: if isAdmin() || (request.auth != null && request.auth.uid == resource.data.investorId);
+      // Only admins can create, update, or delete transactions
+      allow write: if isAdmin();
+    }
+
+    // RATES Collection
+    match /rates/{rateId} {
+      // Anyone authenticated can read rates (needed for reports)
+      allow read: if request.auth != null;
+      // Only admins can write rates
+      allow write: if isAdmin();
+    }
+  }
+}

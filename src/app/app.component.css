@@ -1,0 +1,150 @@
+/* Modern Dashboard Layout */
+.app-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: #f8f9fa;
+}
+
+.top-navbar {
+  background: linear-gradient(195deg, #1a237e, #0d47a1);
+  color: white;
+  padding: 0 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+.nav-brand {
+  flex-shrink: 0;
+}
+
+.logo {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 1.5rem;
+  margin: 0;
+  letter-spacing: 0.5px;
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.nav-links a {
+  color: rgba(255,255,255,0.8);
+  text-decoration: none;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  font-size: 0.9rem;
+}
+
+.nav-links a:hover {
+  background: rgba(255,255,255,0.1);
+  color: white;
+  transform: translateY(-2px);
+}
+
+.nav-links a.active {
+  background: rgba(255,255,255,0.15);
+  color: white;
+  font-weight: 500;
+}
+
+.nav-label {
+  font-size: 0.95rem;
+}
+
+.material-icons {
+  font-size: 1.2rem;
+}
+
+.nav-actions {
+  flex-shrink: 0;
+}
+
+.logout-btn {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.8);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  font-size: 0.9rem;
+}
+
+.logout-btn:hover {
+  background: rgba(255,255,255,0.1);
+  color: white;
+}
+
+.content-area {
+  flex-grow: 1;
+  padding: 2rem;
+  background-color: white;
+  min-height: calc(100vh - 80px);
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .nav-links {
+    gap: 0.25rem;
+  }
+
+  .nav-links a {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.85rem;
+  }
+
+  .nav-label {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .top-navbar {
+    padding: 0 1rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .nav-links {
+    order: 3;
+    width: 100%;
+    justify-content: center;
+    gap: 0.25rem;
+  }
+
+  .nav-links a {
+    padding: 0.5rem;
+    min-width: auto;
+  }
+
+  .content-area {
+    padding: 1rem;
+  }
+}
+
+/* Interactive Animations */
+.nav-links a {
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}

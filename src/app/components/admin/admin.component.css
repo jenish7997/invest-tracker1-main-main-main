@@ -1,0 +1,213 @@
+.container {
+  max-width: 1000px;
+  margin: auto;
+  padding: 20px;
+}
+
+.admin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid #eee;
+}
+
+.admin-header h1 {
+  margin: 0;
+  color: #333;
+}
+
+.logout-btn {
+  padding: 8px 16px;
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s ease;
+}
+
+.logout-btn:hover {
+  background-color: #c82333;
+}
+
+.card {
+  background: #fff;
+  padding: 20px;
+  margin-bottom: 30px;
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th, td {
+  text-align: left;
+  padding: 10px;
+  border-bottom: 1px solid #ddd;
+}
+
+th {
+  background: #f4f4f4;
+}
+
+.admin-actions {
+  margin-bottom: 20px;
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border-left: 4px solid #007bff;
+}
+
+.action-group {
+  margin-bottom: 20px;
+  padding: 10px;
+  background: white;
+  border-radius: 6px;
+  border: 1px solid #e9ecef;
+}
+
+.action-group:last-child {
+  margin-bottom: 0;
+}
+
+.cleanup-btn {
+  padding: 10px 20px;
+  background-color: #ffc107;
+  color: #212529;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.3s ease;
+  margin-bottom: 8px;
+}
+
+.cleanup-btn:hover:not(:disabled) {
+  background-color: #e0a800;
+}
+
+.cleanup-btn:disabled {
+  background-color: #6c757d;
+  color: #fff;
+  cursor: not-allowed;
+}
+
+.danger-btn {
+  padding: 10px 20px;
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.3s ease;
+  margin-bottom: 8px;
+}
+
+.danger-btn:hover:not(:disabled) {
+  background-color: #c82333;
+}
+
+.danger-btn:disabled {
+  background-color: #6c757d;
+  color: #fff;
+  cursor: not-allowed;
+}
+
+.recalc-btn {
+  padding: 10px 20px;
+  background-color: #17a2b8;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.3s ease;
+  margin-bottom: 8px;
+}
+
+.recalc-btn:hover:not(:disabled) {
+  background-color: #138496;
+}
+
+.recalc-btn:disabled {
+  background-color: #6c757d;
+  color: #fff;
+  cursor: not-allowed;
+}
+
+.help-text {
+  margin: 0;
+  font-size: 12px;
+  color: #6c757d;
+  font-style: italic;
+}
+
+.actions-cell {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  align-items: center;
+}
+
+.interest-btn {
+  padding: 6px 12px;
+  background-color: #28a745;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  transition: background-color 0.3s ease;
+}
+
+.interest-btn:hover:not(:disabled) {
+  background-color: #218838;
+}
+
+.interest-btn:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
+}
+
+.delete-btn {
+  padding: 6px 12px;
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  transition: background-color 0.3s ease;
+}
+
+.delete-btn:hover:not(:disabled) {
+  background-color: #c82333;
+}
+
+.delete-btn:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th:last-child,
+td:last-child {
+  width: 200px;
+  text-align: center;
+}

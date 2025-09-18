@@ -1,0 +1,91 @@
+<div class="transactions-container">
+  <div class="page-header">
+    <div class="header-content">
+      <h1 class="page-title">
+        <span class="material-icons title-icon">receipt_long</span>
+        Investment & Withdrawal History
+      </h1>
+      <p class="page-subtitle">View investment and withdrawal transactions (interest calculations are shown in reports)</p>
+    </div>
+  </div>
+
+  <div class="content-section">
+    <div class="filter-section">
+      <div class="filter-card">
+        <h3 class="filter-title">
+          <span class="material-icons">filter_list</span>
+          Filter Transactions
+        </h3>
+        <form [formGroup]="transactionForm" class="filter-form">
+          <div class="form-group">
+            <label for="investor" class="form-label">
+              <span class="material-icons">person</span>
+              Select Investor
+            </label>
+            <select id="investor" formControlName="investorId"
+                    (change)="onInvestorChange($event)"
+                    class="form-select">
+              <option value="">-- Select Investor --</option>
+              <option *ngFor="let inv of investors" [value]="inv.id">{{ inv.name }}</option>
+            </select>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="transactions-section" *ngIf="SelectedInvestorTransection.length">
+      <div class="section-header">
+        <h3 class="section-title">
+          <span class="material-icons">history</span>
+          Investment & Withdrawal Records
+        </h3>
+        <div class="transaction-count">
+          {{ SelectedInvestorTransection.length }} transaction{{ SelectedInvestorTransection.length !== 1 ? 's' : '' }}
+        </div>
+      </div>
+
+      <div class="table-container">
+        <table class="transactions-table">
+          <thead>
+            <tr>
+              <th class="date-column">
+                <span class="material-icons">calendar_today</span>
+                Date
+              </th>
+              <th class="type-column">
+                <span class="material-icons">category</span>
+                Type
+              </th>
+              <th class="amount-column">
+                <span class="material-icons">attach_money</span>
+                Amount
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let r of SelectedInvestorTransection" class="transaction-row">
+              <td class="date-cell">{{ r.date?.toDate() | date:'mediumDate' }}</td>
+              <td class="type-cell">
+                <span class="type-badge" [ngClass]="r.type.toLowerCase()">
+                  {{ r.type }}
+                </span>
+              </td>
+              <td class="amount-cell" [ngClass]="r.type === 'invest' || r.type === 'deposit' || r.type === 'interest' ? 'positive' : 'negative'">
+                <span class="amount-symbol">{{ r.type === 'invest' || r.type === 'deposit' || r.type === 'interest' ? '+' : '-' }}</span>
+                ₹{{ r.amount | number:'1.2-2' }}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="empty-state" *ngIf="!SelectedInvestorTransection.length && investors.length">
+      <div class="empty-state-content">
+        <span class="material-icons empty-icon">receipt</span>
+        <h3>No Investment/Withdrawal Transactions Found</h3>
+        <p>Select an investor to view their investment and withdrawal history</p>
+      </div>
+    </div>
+  </div>
+</div>

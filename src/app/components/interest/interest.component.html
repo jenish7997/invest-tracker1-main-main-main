@@ -1,0 +1,111 @@
+
+<div class="interest-container">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="header-content">
+      <h1 class="page-title">
+        <span class="material-icons title-icon">trending_up</span>
+        Monthly Interest Rates
+      </h1>
+      <p class="page-subtitle">Set and apply interest rates for each month.</p>
+    </div>
+  </div>
+
+  <!-- Form Card -->
+  <div class="form-card">
+    <h2 class="form-title">
+      <span class="material-icons">add_circle_outline</span>
+      Apply New Interest Rate
+    </h2>
+    
+    <form [formGroup]="rateForm" (ngSubmit)="applyInterest()" class="rate-form">
+      <div class="form-row">
+        <!-- Month Selection -->
+        <div class="form-group">
+          <label for="monthKey">Select Month</label>
+          <input id="monthKey" type="month" formControlName="monthKey">
+          <div *ngIf="rateForm.get('monthKey')?.invalid && rateForm.get('monthKey')?.touched" class="error-message">
+            Month is required.
+          </div>
+        </div>
+        
+        <!-- Rate Input -->
+        <div class="form-group">
+          <label for="rate">Interest Rate (%)</label>
+          <input id="rate" type="number" formControlName="rate" placeholder="e.g., 5 for 5%" step="0.01">
+          <div *ngIf="rateForm.get('rate')?.invalid && rateForm.get('rate')?.touched" class="error-message">
+            Rate must be between 0 and 100 (e.g., 5 for 5%).
+          </div>
+        </div>
+      </div>
+      
+      <!-- Submit Button -->
+      <button type="submit" [disabled]="rateForm.invalid || loading" class="submit-btn">
+        <span *ngIf="!loading">Apply Interest & Recalculate All</span>
+        <div *ngIf="loading" class="spinner"></div>
+        <span *ngIf="loading">Applying...</span>
+      </button>
+    </form>
+
+    <!-- Server Messages -->
+    <div *ngIf="successMessage" class="success-message">
+      {{ successMessage }}
+    </div>
+    <div *ngIf="errorMessage" class="error-message">
+      {{ errorMessage }}
+    </div>
+  </div>
+
+  <!-- Historical Rates Table -->
+  <div class="table-card">
+    <h2 class="table-title">
+      <span class="material-icons">history</span>
+      Historical Interest Rates
+    </h2>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Month</th>
+            <th>Rate</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let r of rates; let i = index">
+            <td>{{ r.monthKey }}</td>
+            <td>
+              <span *ngIf="!editingRate || editingIndex !== i">{{ (r.rate * 100) | number:'1.2-2' }}%</span>
+              <div *ngIf="editingRate && editingIndex === i" class="edit-form">
+                <input 
+                  type="number" 
+                  [(ngModel)]="editRateValue" 
+                  placeholder="Enter rate %" 
+                  step="0.01"
+                  min="0"
+                  max="100"
+                  class="edit-input">
+                <div class="edit-actions">
+                  <button class="save-btn" (click)="saveRateEdit(r, i)">Save</button>
+                  <button class="cancel-btn" (click)="cancelEdit()">Cancel</button>
+                </div>
+              </div>
+            </td>
+            <td>
+              <button 
+                *ngIf="!editingRate || editingIndex !== i"
+                class="edit-btn" 
+                (click)="startEdit(r, i)"
+                [disabled]="editingRate">
+                Edit
+              </button>
+            </td>
+          </tr>
+          <tr *ngIf="rates.length === 0">
+            <td colspan="3">No historical rates found.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

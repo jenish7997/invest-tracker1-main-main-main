@@ -1,0 +1,552 @@
+.report-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+  background-color: #f8f9fa;
+  min-height: 100vh;
+}
+
+.report-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.report-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #1a237e;
+  margin: 0;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  flex: 1;
+  text-align: center;
+}
+
+.refresh-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, #1a237e, #3949ab);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(26, 35, 126, 0.3);
+}
+
+.refresh-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #0d47a1, #283593);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(26, 35, 126, 0.4);
+}
+
+.refresh-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.refresh-btn .material-icons {
+  font-size: 1.2rem;
+}
+
+/* Loading Message */
+.loading-message {
+  text-align: center;
+  padding: 3rem 2rem;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  margin-bottom: 2rem;
+}
+
+.loading-spinner {
+  margin-bottom: 1.5rem;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #e9ecef;
+  border-top: 4px solid #1a237e;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto;
+}
+
+.loading-message h3 {
+  font-size: 1.5rem;
+  color: #1a237e;
+  margin-bottom: 1rem;
+}
+
+.loading-message p {
+  color: #6c757d;
+  margin: 0;
+}
+
+/* Error Message */
+.error-message {
+  text-align: center;
+  padding: 3rem 2rem;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  margin-bottom: 2rem;
+  border-left: 4px solid #dc3545;
+}
+
+.error-icon {
+  margin-bottom: 1.5rem;
+}
+
+.error-icon .material-icons {
+  font-size: 4rem;
+  color: #dc3545;
+}
+
+.error-message h3 {
+  font-size: 1.5rem;
+  color: #dc3545;
+  margin-bottom: 1rem;
+}
+
+.error-message p {
+  color: #6c757d;
+  margin-bottom: 1.5rem;
+}
+
+.retry-btn {
+  background: linear-gradient(135deg, #dc3545, #c82333);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.3s ease;
+}
+
+.retry-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+}
+
+/* No Data Message */
+.no-data-message {
+  text-align: center;
+  padding: 3rem 2rem;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  margin-bottom: 2rem;
+}
+
+.no-data-icon {
+  margin-bottom: 1.5rem;
+}
+
+.no-data-icon .material-icons {
+  font-size: 4rem;
+  color: #6c757d;
+}
+
+.no-data-message h3 {
+  font-size: 1.5rem;
+  color: #495057;
+  margin-bottom: 1rem;
+}
+
+.no-data-message p {
+  color: #6c757d;
+  margin-bottom: 1rem;
+}
+
+.no-data-message ul {
+  text-align: left;
+  max-width: 400px;
+  margin: 0 auto;
+  color: #6c757d;
+}
+
+.no-data-message li {
+  margin-bottom: 0.5rem;
+}
+
+/* Report Cards */
+.report-card {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  margin-bottom: 2rem;
+  overflow: hidden;
+  animation: slideIn 0.6s ease-out;
+}
+
+.report-card-header {
+  background: linear-gradient(135deg, #1a237e, #0d47a1);
+  color: white;
+  padding: 2rem 2rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.report-card-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, rgba(255,255,255,0.1) 0%, transparent 100%);
+  pointer-events: none;
+}
+
+.investor-name {
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin: 0;
+  text-transform: capitalize;
+  letter-spacing: 1px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  position: relative;
+  z-index: 1;
+}
+
+/* Stats Grid */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  padding: 2rem;
+}
+
+.stat-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.5rem;
+  border-radius: 12px;
+  transition: transform 0.3s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+}
+
+.stat-card.principal {
+  background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+  border-left: 4px solid #2196f3;
+}
+
+.stat-card.interest {
+  background: linear-gradient(135deg, #e8f5e8, #c8e6c9);
+  border-left: 4px solid #4caf50;
+}
+
+.stat-card.capital {
+  background: linear-gradient(135deg, #f3e5f5, #e1bee7);
+  border-left: 4px solid #9c27b0;
+}
+
+.stat-icon {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.8);
+  flex-shrink: 0;
+}
+
+.stat-icon .material-icons {
+  font-size: 1.5rem;
+  color: #1a237e;
+}
+
+.stat-content h3 {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #495057;
+  margin: 0 0 0.25rem 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1a237e;
+  margin: 0;
+}
+
+.monthly-breakdown {
+  margin-top: 0.5rem;
+}
+
+.breakdown-text {
+  color: #6c757d;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  font-style: italic;
+  display: block;
+}
+
+.interest-rate {
+  display: block;
+  color: #6c757d;
+  font-size: 0.7rem;
+  font-style: italic;
+  margin-top: 0.25rem;
+  font-weight: 500;
+}
+
+/* Transactions Section */
+.transactions-section {
+  padding: 0 2rem 2rem;
+}
+
+.section-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1a237e;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.table-container {
+  overflow-x: auto;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background: white;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .transactions-table th,
+  .transactions-table td {
+    padding: 0.75rem 0.5rem;
+    font-size: 0.85rem;
+  }
+  
+  .investor-name {
+    font-size: 1.5rem;
+  }
+  
+  .table-container {
+    margin: 0 -1rem;
+    border-radius: 0;
+  }
+}
+
+.transactions-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  table-layout: fixed;
+}
+
+.transactions-table th:nth-child(1), /* Date */
+.transactions-table td:nth-child(1) {
+  width: 15%;
+}
+
+.transactions-table th:nth-child(2), /* Description */
+.transactions-table td:nth-child(2) {
+  width: 15%;
+}
+
+.transactions-table th:nth-child(3), /* Principal */
+.transactions-table td:nth-child(3) {
+  width: 17.5%;
+}
+
+.transactions-table th:nth-child(4), /* Interest */
+.transactions-table td:nth-child(4) {
+  width: 17.5%;
+}
+
+.transactions-table th:nth-child(5), /* Withdrawal */
+.transactions-table td:nth-child(5) {
+  width: 17.5%;
+}
+
+.transactions-table th:nth-child(6), /* Balance */
+.transactions-table td:nth-child(6) {
+  width: 17.5%;
+}
+
+.transactions-table th {
+  background: #f8f9fa;
+  padding: 1rem;
+  text-align: center;
+  font-weight: 600;
+  color: #1a237e;
+  border-bottom: 2px solid #e9ecef;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.transactions-table th:first-child {
+  text-align: left;
+}
+
+.transactions-table th:nth-child(2) {
+  text-align: left;
+}
+
+.transactions-table td {
+  padding: 1rem;
+  border-bottom: 1px solid #e9ecef;
+  font-size: 0.95rem;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.transactions-table td:first-child {
+  text-align: left;
+  font-weight: 500;
+}
+
+.transactions-table td:nth-child(2) {
+  text-align: left;
+}
+
+.amount {
+  font-weight: 600;
+  font-family: 'Courier New', monospace;
+}
+
+.principal-amount {
+  color: #2196f3;
+}
+
+.interest-amount {
+  color: #4caf50;
+}
+
+.withdrawal-amount {
+  color: #f44336;
+}
+
+.balance-amount {
+  color: #9c27b0;
+  font-weight: 700;
+  background: rgba(156, 39, 176, 0.1);
+  border-radius: 4px;
+  padding: 0.25rem 0.5rem;
+}
+
+.transactions-table tr:hover {
+  background: #f8f9fa;
+}
+
+.transaction-type {
+  text-transform: capitalize;
+  font-weight: 500;
+  color: #495057;
+}
+
+.amount {
+  text-align: right;
+  font-weight: 600;
+}
+
+.principal-amount {
+  color: #2196f3;
+}
+
+.interest-amount {
+  color: #4caf50;
+}
+
+.withdrawal-amount {
+  color: #f44336;
+}
+
+.balance-amount {
+  color: #1a237e;
+  font-weight: 700;
+}
+
+/* No Transactions */
+.no-transactions {
+  text-align: center;
+  padding: 2rem;
+  color: #6c757d;
+}
+
+.no-transactions .material-icons {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  display: block;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .report-container {
+    padding: 1rem;
+  }
+  
+  .report-title {
+    font-size: 2rem;
+  }
+  
+  .stats-grid {
+    grid-template-columns: 1fr;
+    padding: 1rem;
+  }
+  
+  .stat-card {
+    padding: 1rem;
+  }
+  
+  .report-card-header {
+    padding: 1rem;
+  }
+  
+  .transactions-section {
+    padding: 0 1rem 1rem;
+  }
+  
+  .transactions-table {
+    font-size: 0.85rem;
+  }
+  
+  .transactions-table th,
+  .transactions-table td {
+    padding: 0.75rem 0.5rem;
+  }
+}
+
+/* Animations */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}

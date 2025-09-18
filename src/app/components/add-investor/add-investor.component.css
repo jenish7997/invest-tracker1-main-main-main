@@ -1,0 +1,160 @@
+
+/* Shared Styles from other modern components */
+.add-investor-container {
+  padding: 2rem;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.page-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.header-content {
+  display: inline-block;
+  text-align: left;
+}
+
+.page-title {
+  font-size: 2.5rem;
+  font-weight: 300;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  color: #333;
+}
+
+.page-subtitle {
+  font-size: 1.1rem;
+  color: #666;
+  margin-top: -0.5rem;
+}
+
+.form-card {
+  background-color: #ffffff;
+  border-radius: 8px;
+  padding: 2.5rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0..05);
+  border: 1px solid #e0e0e0;
+}
+
+.form-title {
+  font-size: 1.5rem;
+  font-weight: 500;
+  margin-bottom: 2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  color: #1a73e8;
+}
+
+.investor-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group label {
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+  color: #555;
+}
+
+.input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-icon {
+  position: absolute;
+  left: 15px;
+  color: #888;
+}
+
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"] {
+  width: 100%;
+  padding: 12px 12px 12px 50px; /* Space for icon */
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 1rem;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+input:focus {
+  border-color: #1a73e8;
+  box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2);
+  outline: none;
+}
+
+.form-actions {
+  text-align: right;
+  margin-top: 1rem;
+}
+
+.submit-btn {
+  background-color: #1a73e8;
+  color: white;
+  padding: 12px 25px;
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.3s, box-shadow 0.3s;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.submit-btn:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.submit-btn:hover:not(:disabled) {
+  background-color: #1558b3;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.error-message {
+  color: #d32f2f;
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+}
+
+.server-error {
+  margin-top: 1.5rem;
+  text-align: center;
+  font-weight: 500;
+}
+
+.success-message {
+  color: #2e7d32;
+  margin-top: 1.5rem;
+  text-align: center;
+  font-weight: 500;
+}
+
+.spinner {
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid white;
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}

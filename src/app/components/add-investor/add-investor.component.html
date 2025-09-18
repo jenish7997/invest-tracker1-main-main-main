@@ -1,0 +1,79 @@
+
+<div class="add-investor-container">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="header-content">
+      <h1 class="page-title">
+        <span class="material-icons title-icon">person_add</span>
+        Add New Investor
+      </h1>
+      <p class="page-subtitle">Create a new user profile and their initial account.</p>
+    </div>
+  </div>
+
+  <!-- Form Card -->
+  <div class="form-card">
+    <h2 class="form-title">
+      <span class="material-icons">assignment_ind</span>
+      Investor Details
+    </h2>
+
+    <form [formGroup]="investorForm" (ngSubmit)="onSubmit()" class="investor-form" novalidate>
+      
+      <!-- Name Field -->
+      <div class="form-group">
+        <label for="name">Full Name</label>
+        <div class="input-wrapper">
+          <span class="material-icons input-icon">person</span>
+          <input id="name" type="text" formControlName="name" placeholder="e.g., John Doe">
+        </div>
+        <div *ngIf="investorForm.controls['name'].invalid && investorForm.controls['name'].touched" class="error-message">
+          Name is required.
+        </div>
+      </div>
+
+      <!-- Email Field -->
+      <div class="form-group">
+        <label for="email">Email Address</label>
+        <div class="input-wrapper">
+          <span class="material-icons input-icon">email</span>
+          <input id="email" type="email" formControlName="email" placeholder="e.g., user@example.com">
+        </div>
+        <div *ngIf="investorForm.controls['email'].invalid && investorForm.controls['email'].touched" class="error-message">
+          Please enter a valid email address.
+        </div>
+      </div>
+
+      <!-- Password Field -->
+      <div class="form-group">
+        <label for="password">Set Permanent Password</label>
+        <div class="input-wrapper">
+          <span class="material-icons input-icon">password</span>
+          <input id="password" type="password" formControlName="password" placeholder="Minimum 8 characters">
+        </div>
+        <div *ngIf="investorForm.controls['password'].invalid && investorForm.controls['password'].touched" class="error-message">
+          Password must be at least 8 characters long.
+        </div>
+      </div>
+
+
+      <!-- Submit Button -->
+      <div class="form-actions">
+        <button type="submit" [disabled]="investorForm.invalid || loading" class="submit-btn">
+          <span *ngIf="!loading">Create Investor</span>
+          <div *ngIf="loading" class="spinner"></div>
+          <span *ngIf="loading">Creating...</span>
+        </button>
+      </div>
+
+    </form>
+    
+    <!-- Server Messages -->
+    <div *ngIf="successMessage" class="success-message">
+      {{ successMessage }}
+    </div>
+    <div *ngIf="errorMessage" class="error-message server-error">
+      {{ errorMessage }}
+    </div>
+  </div>
+</div>
