@@ -8,7 +8,9 @@
       "http://localhost:3000",
       "https://localhost:3000",
       "https://invest-tracker-447ff.web.app",
-      "https://invest-tracker-447ff.firebaseapp.com"
+      "https://invest-tracker-447ff.firebaseapp.com",
+      "https://4200-firebase-invest-tracker1-fi-1758179871815.cluster-iktsryn7xnhpexlu6255bftka4.cloudworkstations.dev",
+      "https://45243-firebase-invest-tracker1-fi-1758179871815.cluster-iktsryn7xnhpexlu6255bftka4.cloudworkstations.dev"
     ],
     "method": [
       "GET",

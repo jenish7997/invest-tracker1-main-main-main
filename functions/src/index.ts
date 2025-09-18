@@ -1,6 +1,9 @@
 import * as admin from "firebase-admin";
 import {onCall, HttpsError} from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
+import * as cors from "cors";
+
+const corsHandler = cors({origin: true});
 
 admin.initializeApp();
 
