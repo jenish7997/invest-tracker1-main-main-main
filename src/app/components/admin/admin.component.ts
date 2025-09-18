@@ -17,8 +17,8 @@ export class AdminComponent implements OnInit {
   investors: Investor[] = [];
   transactions: Transaction[] = [];
   isDeleting = false;
-  isApplyingInterest = false;
   isRecalculating = false;
+  isInitializingRates = false;
 
   constructor(
     private svc: InvestmentService,
@@ -31,7 +31,9 @@ export class AdminComponent implements OnInit {
   }
 
   loadInvestors(): void {
+    console.log('[DEBUG] loadInvestors called');
     this.svc.listInvestors().subscribe(data => {
+      console.log('[DEBUG] Investors loaded in admin:', data);
       this.investors = data;
     });
   }
@@ -94,32 +96,37 @@ export class AdminComponent implements OnInit {
     }
   }
 
-  async applyHistoricalInterestToInvestor(investorId: string, investorName: string): Promise<void> {
-    if (this.isApplyingInterest) return;
-    
+  async initializeSampleRates(): Promise<void> {
     const confirmed = confirm(
-      `Apply historical interest to ${investorName}?\n\n` +
-      `This will apply all available interest rates from their earliest transaction date to current month.\n` +
-      `Interest that has already been applied will be skipped.`
+      `Initialize sample interest rates?\n\n` +
+      `This will add sample rates for the current year to help you test the interest page.\n` +
+      `The rates will be:\n` +
+      `• January: 10%\n` +
+      `• February: 12%\n` +
+      `• March: 8%\n` +
+      `• April: 15%\n` +
+      `• May: 9%\n` +
+      `• June: 11%\n\n` +
+      `You can edit these rates later from the Interest page.`
     );
     
     if (!confirmed) return;
-    
-    this.isApplyingInterest = true;
-    
+
+    this.isInitializingRates = true;
     try {
-      const success = await this.adminService.applyHistoricalInterest(investorId);
+      const success = await this.adminService.initializeSampleRates();
       if (success) {
-        // Refresh the investors list to show updated balances
-        this.loadInvestors();
+        alert('Sample interest rates initialized successfully! You can now use the Interest page.');
+      } else {
+        alert('Failed to initialize sample rates. Please try again.');
       }
     } catch (error) {
-      console.error('Error applying historical interest:', error);
+      console.error('Error initializing sample rates:', error);
+      alert('Error initializing sample rates. Please try again.');
     } finally {
-      this.isApplyingInterest = false;
+      this.isInitializingRates = false;
     }
   }
-
 
   onLogout(): void {
     this.authService.logout();

@@ -17,28 +17,61 @@ export class InvestmentService {
 
   addTransaction(transactionData: Omit<Transaction, 'id'>): Promise<any> {
     const transactionsCollection = collection(this.firestore, 'transactions');
-    return addDoc(transactionsCollection, transactionData);
+    // Add createdAt timestamp for precise ordering
+    const transactionWithTimestamp = {
+      ...transactionData,
+      createdAt: Timestamp.now()
+    };
+    return addDoc(transactionsCollection, transactionWithTimestamp);
   }
 
   async computeBalances(investorId: string, startMonthKey?: string, endMonthKey?: string): Promise<any[]> {
+    console.log(`[DEBUG] computeBalances called for investorId: ${investorId}`);
+    
     const transactionsCollection = collection(this.firestore, 'transactions');
     
+    // First, get all transactions for the investor
     let constraints = [
       where('investorId', '==', investorId),
-      orderBy('date')
+      orderBy('date', 'asc')
     ];
 
     const q = query(collection(this.firestore, 'transactions'), ...constraints);
     
     const querySnapshot = await getDocs(q);
+    console.log(`[DEBUG] Found ${querySnapshot.docs.length} transactions for investor ${investorId}`);
     
     const allTransactions = querySnapshot.docs.map(doc => {
       const data = doc.data() as Transaction;
       return {
         ...data,
-        date: (data.date as unknown as Timestamp).toDate()
+        date: (data.date as unknown as Timestamp).toDate(),
+        createdAt: data.createdAt ? (data.createdAt as unknown as Timestamp).toDate() : new Date()
       };
     });
+
+    console.log(`[DEBUG] Mapped transactions:`, allTransactions.map(t => ({
+      type: t.type,
+      amount: t.amount,
+      date: t.date,
+      createdAt: t.createdAt
+    })));
+
+    // Sort by date first, then by createdAt for same-day transactions
+    allTransactions.sort((a, b) => {
+      const dateCompare = a.date.getTime() - b.date.getTime();
+      if (dateCompare === 0) {
+        return a.createdAt.getTime() - b.createdAt.getTime();
+      }
+      return dateCompare;
+    });
+
+    console.log(`[DEBUG] Sorted transactions:`, allTransactions.map(t => ({
+      type: t.type,
+      amount: t.amount,
+      date: t.date,
+      createdAt: t.createdAt
+    })));
 
     const startDate = startMonthKey ? new Date(startMonthKey + '-01') : null;
     const endDate = endMonthKey ? new Date(endMonthKey + '-28') : null;
@@ -51,18 +84,31 @@ export class InvestmentService {
     });
 
     let balance = 0;
-    const runningBalances = filteredTransactions.map(t => {
+    console.log(`[DEBUG] Processing ${filteredTransactions.length} filtered transactions`);
+    
+    const runningBalances = filteredTransactions.map((t, index) => {
+      const oldBalance = balance;
       if (t.type === 'invest' || t.type === 'deposit' || t.type === 'interest') {
         balance += t.amount;
       } else if (t.type === 'withdraw') {
         balance -= t.amount;
       }
+      
+      console.log(`[DEBUG] Transaction ${index + 1}: ${t.type} ${t.amount} | Balance: ${oldBalance} -> ${balance}`);
+      
       return {
         ...t,
         balance: balance,
         date: this.formatDateForDisplay(t.date)
       };
     });
+    
+    console.log(`[DEBUG] Final running balances:`, runningBalances.map(t => ({
+      type: t.type,
+      amount: t.amount,
+      balance: t.balance,
+      date: t.date
+    })));
     
     return runningBalances;
   }
@@ -76,11 +122,26 @@ export class InvestmentService {
     );
     const querySnapshot = await getDocs(q);
     
-    return querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-      date: (doc.data()['date'] as unknown as Timestamp).toDate()
-    })) as Transaction[];
+    const transactions = querySnapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        date: (data['date'] as unknown as Timestamp).toDate(),
+        createdAt: data['createdAt'] ? (data['createdAt'] as unknown as Timestamp).toDate() : new Date()
+      };
+    }) as Transaction[];
+
+    // Sort by date first, then by createdAt for same-day transactions
+    transactions.sort((a, b) => {
+      const dateCompare = a.date.getTime() - b.date.getTime();
+      if (dateCompare === 0) {
+        return a.createdAt.getTime() - b.createdAt.getTime();
+      }
+      return dateCompare;
+    });
+
+    return transactions;
   }
 
   listRates(): Observable<MonthlyRate[]> {

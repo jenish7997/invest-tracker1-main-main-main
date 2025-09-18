@@ -76,38 +76,6 @@ export class AdminService {
     }
   }
 
-  async applyHistoricalInterest(investorId: string, fromMonthKey?: string, toMonthKey?: string): Promise<boolean> {
-    try {
-      const applyHistoricalInterest = httpsCallable(this.functions, 'applyHistoricalInterest');
-      const result = await applyHistoricalInterest({ 
-        investorId, 
-        fromMonthKey, 
-        toMonthKey 
-      });
-      const data: any = result.data;
-      
-      this.snackBar.open(data.message, 'Close', { duration: 5000 });
-      
-      if (data.processedMonths > 0) {
-        this.logger.debug('Applied historical interest', {
-          months: data.processedMonths,
-          totalInterest: data.totalInterestApplied
-        });
-      }
-      
-      return true;
-    } catch (error: any) {
-      this.logger.error('Error applying historical interest', error);
-      let errorMessage = 'An error occurred while applying historical interest.';
-      
-      if (error.message) {
-        errorMessage = error.message;
-      }
-      
-      this.snackBar.open(errorMessage, 'Close', { duration: 5000 });
-      return false;
-    }
-  }
 
   async recalculateInterestForInvestor(investorId: string): Promise<boolean> {
     try {
@@ -154,6 +122,32 @@ export class AdminService {
     } catch (error: any) {
       this.logger.error('Error deleting investor', error);
       let errorMessage = 'An error occurred while deleting the investor.';
+      
+      if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      this.snackBar.open(errorMessage, 'Close', { duration: 5000 });
+      return false;
+    }
+  }
+
+  async initializeSampleRates(): Promise<boolean> {
+    try {
+      const initializeRates = httpsCallable(this.functions, 'initializeSampleRates');
+      const result = await initializeRates({});
+      const data: any = result.data;
+      
+      this.snackBar.open(data.message, 'Close', { duration: 5000 });
+      
+      this.logger.debug('Successfully initialized sample rates', {
+        message: data.message
+      });
+      
+      return true;
+    } catch (error: any) {
+      this.logger.error('Error initializing sample rates', error);
+      let errorMessage = 'An error occurred while initializing sample rates.';
       
       if (error.message) {
         errorMessage = error.message;

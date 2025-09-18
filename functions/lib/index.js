@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.applyMonthlyInterestAndRecalculate = exports.updateInterestRate = exports.deleteInvestor = exports.recalculateInterestForInvestor = exports.applyHistoricalInterest = exports.cleanupOrphanedInvestors = exports.setupInitialAdmin = exports.setAdminClaim = exports.createInvestorUser = void 0;
+exports.initializeSampleRates = exports.applyMonthlyInterestAndRecalculate = exports.updateInterestRate = exports.deleteInvestor = exports.recalculateInterestForInvestor = exports.cleanupOrphanedInvestors = exports.setupInitialAdmin = exports.setAdminClaim = exports.createInvestorUser = void 0;
 const admin = __importStar(require("firebase-admin"));
 const https_1 = require("firebase-functions/v2/https");
 const logger = __importStar(require("firebase-functions/logger"));
@@ -226,165 +226,6 @@ exports.cleanupOrphanedInvestors = (0, https_1.onCall)({
     }
 });
 /**
- * Applies historical interest rates to a specific investor based on their transaction history
- */
-exports.applyHistoricalInterest = (0, https_1.onCall)({
-    cors: corsOrigins
-}, async (request) => {
-    await verifyAdmin(request.auth);
-    const { investorId, fromMonthKey, toMonthKey } = request.data;
-    if (!investorId) {
-        throw new https_1.HttpsError("invalid-argument", "Investor ID is required.");
-    }
-    try {
-        const investorsRef = admin.firestore().collection("investors");
-        const transactionsRef = admin.firestore().collection("transactions");
-        const ratesRef = admin.firestore().collection("rates");
-        // Get investor data
-        const investorDoc = await investorsRef.doc(investorId).get();
-        if (!investorDoc.exists) {
-            throw new https_1.HttpsError("not-found", "Investor not found.");
-        }
-        const investor = investorDoc.data();
-        if (!investor) {
-            throw new https_1.HttpsError("not-found", "Investor data not found.");
-        }
-        // Get all available rates
-        const ratesSnapshot = await ratesRef.get();
-        const availableRates = new Map();
-        ratesSnapshot.docs.forEach(doc => {
-            const data = doc.data();
-            availableRates.set(data.monthKey, data.rate);
-        });
-        if (availableRates.size === 0) {
-            return { success: true, message: "No interest rates found to apply." };
-        }
-        // Get existing transactions for this investor
-        const existingTransactionsQuery = await transactionsRef
-            .where("investorId", "==", investorId)
-            .orderBy("date", "asc")
-            .get();
-        const transactions = existingTransactionsQuery.docs.map(doc => {
-            const data = doc.data();
-            return {
-                id: doc.id,
-                investorId: data.investorId,
-                investorName: data.investorName,
-                type: data.type,
-                amount: data.amount,
-                date: data.date.toDate()
-            };
-        });
-        // Calculate month range to apply interest
-        let startMonth = fromMonthKey;
-        let endMonth = toMonthKey;
-        if (!startMonth && !endMonth) {
-            // If no range specified, apply all available rates after the earliest transaction
-            if (transactions.length > 0) {
-                const earliestTransaction = transactions[0];
-                const earliestDate = earliestTransaction.date;
-                startMonth = `${earliestDate.getFullYear()}-${String(earliestDate.getMonth() + 1).padStart(2, '0')}`;
-                const currentDate = new Date();
-                endMonth = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
-            }
-        }
-        const batch = admin.firestore().batch();
-        let processedMonths = 0;
-        let totalInterestApplied = 0;
-        // Get all months between start and end
-        const monthsToProcess = [];
-        if (startMonth && endMonth) {
-            const start = new Date(startMonth + '-01');
-            const end = new Date(endMonth + '-01');
-            for (let d = new Date(start); d <= end; d.setMonth(d.getMonth() + 1)) {
-                const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-                if (availableRates.has(monthKey)) {
-                    monthsToProcess.push(monthKey);
-                }
-            }
-        }
-        // Process each month
-        for (const monthKey of monthsToProcess) {
-            const rate = availableRates.get(monthKey);
-            const year = parseInt(monthKey.split('-')[0], 10);
-            const month = parseInt(monthKey.split('-')[1], 10) - 1;
-            const monthEndDate = new Date(year, month, new Date(year, month + 1, 0).getDate());
-            // Check if interest for this month already exists
-            const existingInterestQuery = await transactionsRef
-                .where("investorId", "==", investorId)
-                .where("type", "==", "interest")
-                .get();
-            const hasInterestForMonth = existingInterestQuery.docs.some(doc => {
-                const data = doc.data();
-                const transactionDate = data.date.toDate();
-                return transactionDate.getFullYear() === year &&
-                    transactionDate.getMonth() === month;
-            });
-            if (hasInterestForMonth) {
-                continue; // Skip if interest already applied for this month
-            }
-            // Calculate balance at the end of this month
-            let balanceAtMonthEnd = 0;
-            for (const transaction of transactions) {
-                if (transaction.date <= monthEndDate) {
-                    if (transaction.type === 'invest' || transaction.type === 'deposit' || transaction.type === 'interest') {
-                        balanceAtMonthEnd += transaction.amount;
-                    }
-                    else if (transaction.type === 'withdraw') {
-                        balanceAtMonthEnd -= transaction.amount;
-                    }
-                }
-            }
-            if (balanceAtMonthEnd > 0) {
-                const interestAmount = balanceAtMonthEnd * rate;
-                // Create interest transaction
-                const transactionDocRef = transactionsRef.doc();
-                batch.set(transactionDocRef, {
-                    investorId: investorId,
-                    investorName: investor.name,
-                    date: admin.firestore.Timestamp.fromDate(monthEndDate),
-                    type: 'interest',
-                    amount: interestAmount,
-                });
-                totalInterestApplied += interestAmount;
-                processedMonths++;
-                // Add this interest to our transactions array for next month calculation
-                transactions.push({
-                    id: 'temp-' + monthKey,
-                    investorId: investorId,
-                    investorName: investor.name,
-                    type: 'interest',
-                    amount: interestAmount,
-                    date: monthEndDate
-                });
-            }
-        }
-        if (processedMonths > 0) {
-            // Update investor balance
-            const newBalance = (investor.balance || 0) + totalInterestApplied;
-            batch.update(investorDoc.ref, { balance: newBalance });
-            await batch.commit();
-            logger.info(`Applied historical interest to investor ${investorId}:`, {
-                months: processedMonths,
-                totalInterest: totalInterestApplied
-            });
-            return {
-                success: true,
-                message: `Successfully applied historical interest for ${processedMonths} months. Total interest: ${totalInterestApplied.toFixed(2)}`,
-                processedMonths,
-                totalInterestApplied
-            };
-        }
-        else {
-            return { success: true, message: "No historical interest to apply (already applied or no qualifying months)." };
-        }
-    }
-    catch (error) {
-        logger.error("Error applying historical interest:", error);
-        throw new https_1.HttpsError("internal", "An unexpected error occurred while applying historical interest.");
-    }
-});
-/**
  * Recalculates interest for a specific investor by removing all existing interest and recalculating
  */
 exports.recalculateInterestForInvestor = (0, https_1.onCall)({
@@ -482,6 +323,7 @@ exports.recalculateInterestForInvestor = (0, https_1.onCall)({
                     date: admin.firestore.Timestamp.fromDate(monthEndDate),
                     type: 'interest',
                     amount: interestAmount,
+                    createdAt: admin.firestore.Timestamp.now()
                 });
                 totalInterestApplied += interestAmount;
                 processedMonths++;
@@ -781,6 +623,7 @@ exports.applyMonthlyInterestAndRecalculate = (0, https_1.onCall)({
                     date: admin.firestore.Timestamp.fromDate(interestDate),
                     type: 'interest',
                     amount: interestAmount,
+                    createdAt: admin.firestore.Timestamp.now()
                 });
                 // Update the investor's balance
                 const investorDocRef = investorsRef.doc(doc.id);
@@ -794,6 +637,38 @@ exports.applyMonthlyInterestAndRecalculate = (0, https_1.onCall)({
     catch (error) {
         logger.error("Error applying monthly interest:", error);
         throw new https_1.HttpsError("internal", "An unexpected error occurred while applying interest.");
+    }
+});
+// Initialize sample rates for testing
+exports.initializeSampleRates = (0, https_1.onCall)({
+    cors: corsOrigins
+}, async (request) => {
+    await verifyAdmin(request.auth);
+    try {
+        const ratesRef = admin.firestore().collection("rates");
+        const batch = admin.firestore().batch();
+        // Add sample rates for the current year
+        const currentYear = new Date().getFullYear();
+        const sampleRates = [
+            { monthKey: `${currentYear}-01`, rate: 0.10 }, // 10%
+            { monthKey: `${currentYear}-02`, rate: 0.12 }, // 12%
+            { monthKey: `${currentYear}-03`, rate: 0.08 }, // 8%
+            { monthKey: `${currentYear}-04`, rate: 0.15 }, // 15%
+            { monthKey: `${currentYear}-05`, rate: 0.09 }, // 9%
+            { monthKey: `${currentYear}-06`, rate: 0.11 }, // 11%
+        ];
+        sampleRates.forEach(rate => {
+            const rateDocRef = ratesRef.doc(rate.monthKey);
+            batch.set(rateDocRef, rate);
+        });
+        await batch.commit();
+        return {
+            message: `Sample rates initialized successfully! Added ${sampleRates.length} rates for ${currentYear}.`
+        };
+    }
+    catch (error) {
+        console.error('Error initializing sample rates:', error);
+        throw new https_1.HttpsError("internal", "Failed to initialize sample rates.");
     }
 });
 //# sourceMappingURL=index.js.map

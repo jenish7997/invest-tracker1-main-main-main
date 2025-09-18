@@ -29,12 +29,6 @@
               {{ isRecalculating ? 'Recalculating...' : 'Recalculate Interest' }}
             </button>
             <button 
-              class="interest-btn" 
-              (click)="applyHistoricalInterestToInvestor(inv.id!, inv.name)"
-              [disabled]="isApplyingInterest">
-              Apply Historical Interest
-            </button>
-            <button 
               class="delete-btn" 
               (click)="deleteInvestor(inv.id!, inv.name)"
               [disabled]="isDeleting">
@@ -44,5 +38,15 @@
         </tr>
       </tbody>
     </table>
+  </section>
+
+  <!-- Admin Actions Section -->
+  <section class="card">
+    <h2>Admin Actions</h2>
+    <div class="admin-actions">
+      <button class="init-rates-btn" (click)="initializeSampleRates()" [disabled]="isInitializingRates">
+        {{ isInitializingRates ? 'Initializing...' : 'Initialize Sample Interest Rates' }}
+      </button>
+    </div>
   </section>
 </div>

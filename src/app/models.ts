@@ -5,6 +5,7 @@ export interface Transaction {
   date: any; // Firestore Timestamp or Date
   type: 'invest' | 'withdraw' | 'deposit' | 'interest';
   amount: number;
+  createdAt?: any; // Firestore Timestamp for precise ordering
 }
 
 export interface MonthlyRate {

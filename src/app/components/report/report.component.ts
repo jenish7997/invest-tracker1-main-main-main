@@ -46,19 +46,26 @@ export class ReportComponent implements OnInit, OnDestroy {
   ) { }
 
   ngOnInit() {
+    console.log('[DEBUG] Report component ngOnInit called');
+    
     // Subscribe to interest rate changes
     this.ratesSubscription = this.investmentService.listRates().subscribe({
       next: (rates) => {
+        console.log('[DEBUG] Interest rates updated:', rates);
         this.interestRates.clear();
         rates.forEach(rate => {
           this.interestRates.set(rate.monthKey, rate.rate);
         });
         this.logger.debug('Interest rates updated', this.interestRates);
         
-        // Refresh reports when rates change
-        this.refreshReports();
+        // Only refresh reports if user is already loaded
+        if (this.currentUser) {
+          console.log('[DEBUG] Refreshing reports due to rate change');
+          this.refreshReports();
+        }
       },
       error: (error) => {
+        console.error('[DEBUG] Error loading interest rates:', error);
         this.logger.error('Error loading interest rates', error);
         this.error = 'Error loading interest rates';
         this.loading = false;
@@ -67,6 +74,7 @@ export class ReportComponent implements OnInit, OnDestroy {
 
     // Subscribe to user changes
     this.userSubscription = this.authService.currentUser$.subscribe(user => {
+      console.log('[DEBUG] User state changed:', user);
       if (user) {
         this.currentUser = user; // Store current user info
         this.isAdmin = user.isAdmin;
@@ -74,12 +82,14 @@ export class ReportComponent implements OnInit, OnDestroy {
         this.error = '';
         this.reports = []; // Clear existing reports to prevent duplicates
         
+        console.log('[DEBUG] User authenticated, loading reports. isAdmin:', this.isAdmin);
         // Load reports after user is authenticated
         this.refreshReports();
       } else {
         this.currentUser = null;
         this.loading = false;
         this.error = 'User not authenticated';
+        console.log('[DEBUG] User not authenticated');
       }
     });
   }
@@ -94,14 +104,19 @@ export class ReportComponent implements OnInit, OnDestroy {
   }
 
   private refreshReports() {
+    console.log('[DEBUG] refreshReports called. isAdmin:', this.isAdmin, 'currentUser:', this.currentUser);
     if (this.isAdmin) {
+      console.log('[DEBUG] Loading all investors reports');
       this.loadAllInvestorsReports();
     } else {
       // For non-admin users, we need to get the current user info
       // This is a bit tricky since we're already in a user subscription
       // We'll store the current user info to use here
       if (this.currentUser) {
+        console.log('[DEBUG] Loading user report for:', this.currentUser.displayName);
         this.loadUserReport(this.currentUser.uid, this.currentUser.displayName);
+      } else {
+        console.log('[DEBUG] No current user, cannot load reports');
       }
     }
   }
@@ -112,9 +127,59 @@ export class ReportComponent implements OnInit, OnDestroy {
     this.refreshReports();
   }
 
-  loadAllInvestorsReports() {
+  // Debug method to test data retrieval
+  public async debugDataRetrieval() {
+    console.log('[DEBUG] === DEBUGGING DATA RETRIEVAL ===');
+    
+    // Test 1: Check investors
+    console.log('[DEBUG] Test 1: Loading investors...');
     this.investmentService.listInvestors().subscribe({
       next: (investors) => {
+        console.log('[DEBUG] Investors found:', investors);
+        investors.forEach(investor => {
+          console.log(`[DEBUG] Investor: ${investor.name} (${investor.id})`);
+        });
+      },
+      error: (error) => {
+        console.error('[DEBUG] Error loading investors:', error);
+      }
+    });
+
+    // Test 2: Check transactions for each investor
+    console.log('[DEBUG] Test 2: Loading transactions for each investor...');
+    this.investmentService.listInvestors().subscribe({
+      next: (investors) => {
+        investors.forEach(async (investor) => {
+          console.log(`[DEBUG] Loading transactions for ${investor.name}...`);
+          try {
+            const transactions = await this.investmentService.computeBalances(investor.id!);
+            console.log(`[DEBUG] Transactions for ${investor.name}:`, transactions);
+          } catch (error) {
+            console.error(`[DEBUG] Error loading transactions for ${investor.name}:`, error);
+          }
+        });
+      }
+    });
+
+    // Test 3: Check rates
+    console.log('[DEBUG] Test 3: Loading rates...');
+    this.investmentService.listRates().subscribe({
+      next: (rates) => {
+        console.log('[DEBUG] Rates found:', rates);
+      },
+      error: (error) => {
+        console.error('[DEBUG] Error loading rates:', error);
+      }
+    });
+
+    console.log('[DEBUG] === END DEBUGGING ===');
+  }
+
+  loadAllInvestorsReports() {
+    console.log('[DEBUG] loadAllInvestorsReports called');
+    this.investmentService.listInvestors().subscribe({
+      next: (investors) => {
+        console.log('[DEBUG] Investors loaded:', investors);
         this.logger.debug('Investors loaded', investors);
         if (investors.length === 0) {
           this.loading = false;
@@ -123,12 +188,16 @@ export class ReportComponent implements OnInit, OnDestroy {
         
         let reportsGenerated = 0;
         investors.forEach(investor => {
+          console.log(`[DEBUG] Generating report for investor: ${investor.name} (${investor.id})`);
           this.generateReport(investor.id, investor.name).then(() => {
             reportsGenerated++;
+            console.log(`[DEBUG] Report generated for ${investor.name}. Total: ${reportsGenerated}/${investors.length}`);
             if (reportsGenerated === investors.length) {
+              console.log('[DEBUG] All reports generated. Setting loading to false.');
               this.loading = false;
             }
           }).catch(error => {
+            console.error(`[DEBUG] Error generating report for ${investor.name}:`, error);
             this.logger.error('Error generating report for investor', error);
             this.error = 'Error loading investor data';
             this.loading = false;
@@ -136,6 +205,7 @@ export class ReportComponent implements OnInit, OnDestroy {
         });
       },
       error: (error) => {
+        console.error('[DEBUG] Error loading investors:', error);
         this.logger.error('Error loading investors', error);
         this.error = 'Error loading investors from database';
         this.loading = false;
@@ -159,7 +229,9 @@ export class ReportComponent implements OnInit, OnDestroy {
 
   async generateReport(investorId: string, investorName: string): Promise<void> {
     try {
+      console.log(`[DEBUG] generateReport called for ${investorName} (${investorId})`);
       const transactions = await this.investmentService.computeBalances(investorId);
+      console.log(`[DEBUG] Retrieved ${transactions.length} transactions for ${investorName}:`, transactions);
       this.logger.logFinancialData(`Transactions for ${investorName}`, transactions);
       
       let principal = 0;
@@ -195,6 +267,14 @@ export class ReportComponent implements OnInit, OnDestroy {
 
       const grownCapital = transactions.length > 0 ? transactions[transactions.length - 1].balance : 0;
 
+      console.log(`[DEBUG] Report data for ${investorName}:`, {
+        principal,
+        totalInterest,
+        grownCapital,
+        transactionCount: transactions.length,
+        monthlyInterestBreakdown: monthlyInterestBreakdown.length
+      });
+
       // Check if report for this investor already exists to prevent duplicates
       const existingReportIndex = this.reports.findIndex(r => r.investorName === investorName);
       const newReport = {
@@ -209,10 +289,12 @@ export class ReportComponent implements OnInit, OnDestroy {
       if (existingReportIndex >= 0) {
         // Replace existing report
         this.reports[existingReportIndex] = newReport;
+        console.log(`[DEBUG] Updated existing report for ${investorName}. Total reports: ${this.reports.length}`);
         this.logger.debug('Updated existing report', { investorName });
       } else {
         // Add new report
         this.reports.push(newReport);
+        console.log(`[DEBUG] Added new report for ${investorName}. Total reports: ${this.reports.length}`);
         this.logger.debug('Added new report', { investorName });
       }
     } catch (error) {
