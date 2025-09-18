@@ -8,7 +8,6 @@ import { getFirestore, provideFirestore, connectFirestoreEmulator } from '@angul
 import { getFunctions, provideFunctions } from '@angular/fire/functions';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { provideAnimations } from '@angular/platform-browser/animations';
-import { provideHttpClient } from '@angular/common/http';
 import { environment } from '../environments/environment';
 import { AuthService } from './services/auth.service';
 import { localeConfig } from './locale.config';
@@ -47,7 +46,6 @@ export const appConfig: ApplicationConfig = {
       return functions;
     }),
     provideAnimations(),
-    provideHttpClient(),
     importProvidersFrom(MatSnackBarModule),
     AuthService,
     localeConfig

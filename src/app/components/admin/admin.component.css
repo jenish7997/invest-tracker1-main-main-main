@@ -154,9 +154,10 @@ th {
 
 .actions-cell {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   justify-content: center;
   align-items: center;
+  flex-wrap: wrap;
 }
 
 .interest-btn {
@@ -197,6 +198,27 @@ th {
 }
 
 .delete-btn:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
+}
+
+.recalculate-btn {
+  padding: 6px 12px;
+  background-color: #17a2b8;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  transition: background-color 0.3s ease;
+}
+
+.recalculate-btn:hover:not(:disabled) {
+  background-color: #138496;
+}
+
+.recalculate-btn:disabled {
   background-color: #6c757d;
   cursor: not-allowed;
 }

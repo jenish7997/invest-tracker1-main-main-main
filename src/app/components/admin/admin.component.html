@@ -23,6 +23,12 @@
           <td>{{ inv.id }}</td>
           <td class="actions-cell">
             <button 
+              class="recalculate-btn" 
+              (click)="recalculateInterestForInvestor(inv.id!, inv.name)"
+              [disabled]="isRecalculating">
+              {{ isRecalculating ? 'Recalculating...' : 'Recalculate Interest' }}
+            </button>
+            <button 
               class="interest-btn" 
               (click)="applyHistoricalInterestToInvestor(inv.id!, inv.name)"
               [disabled]="isApplyingInterest">

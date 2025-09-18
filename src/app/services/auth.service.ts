@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { Auth, authState, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, User, getIdTokenResult, IdTokenResult } from '@angular/fire/auth';
 import { Observable, of, from, combineLatest } from 'rxjs';
 import { map, switchMap, shareReplay, startWith, catchError } from 'rxjs/operators';
+import { LoggerService } from './logger.service';
 
 interface AppUser {
   uid: string;
@@ -20,7 +21,11 @@ export class AuthService {
   public readonly isAdmin$: Observable<boolean>;
   public readonly currentUser$: Observable<AppUser | null>;
 
-  constructor(private auth: Auth, private router: Router) {
+  constructor(
+    private auth: Auth, 
+    private router: Router,
+    private logger: LoggerService
+  ) {
     this.user$ = authState(this.auth);
 
     this.isAdmin$ = this.user$.pipe(
@@ -33,12 +38,12 @@ export class AuthService {
             try {
               return tokenResult.claims['admin'] === true;
             } catch (error) {
-              console.warn('Error reading admin claim:', error);
+              this.logger.warn('Error reading admin claim', error);
               return false;
             }
           }),
           catchError(error => {
-            console.warn('Error getting ID token result:', error);
+            this.logger.warn('Error getting ID token result', error);
             return of(false);
           })
         );
@@ -78,7 +83,7 @@ export class AuthService {
     try {
       await signInWithEmailAndPassword(this.auth, email, password);
     } catch (error) {
-      console.error('Login failed:', error);
+      this.logger.error('Login failed', error);
       throw error;
     }
   }
@@ -87,7 +92,7 @@ export class AuthService {
     try {
       await createUserWithEmailAndPassword(this.auth, email, password);
     } catch (error) {
-      console.error('Registration failed:', error);
+      this.logger.error('Registration failed', error);
       throw error;
     }
   }

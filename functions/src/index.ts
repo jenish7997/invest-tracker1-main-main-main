@@ -902,6 +902,152 @@ export const applyInterestForAllInvestors = onCall(async (request) => {
 
 
 /**
+ * Recalculates interest for a specific investor by removing all existing interest and recalculating
+ */
+export const recalculateInterestForInvestor = onCall(async (request) => {
+  await verifyAdmin(request.auth);
+
+  const { investorId } = request.data;
+
+  if (!investorId) {
+    throw new HttpsError("invalid-argument", "Investor ID is required.");
+  }
+
+  try {
+    const investorsRef = admin.firestore().collection("investors");
+    const transactionsRef = admin.firestore().collection("transactions");
+    const ratesRef = admin.firestore().collection("rates");
+
+    // Get investor data
+    const investorDoc = await investorsRef.doc(investorId).get();
+    if (!investorDoc.exists) {
+      throw new HttpsError("not-found", "Investor not found.");
+    }
+
+    const investor = investorDoc.data();
+    if (!investor) {
+      throw new HttpsError("not-found", "Investor data not found.");
+    }
+
+    // Get all available rates
+    const ratesSnapshot = await ratesRef.get();
+    const availableRates = new Map();
+    ratesSnapshot.docs.forEach(doc => {
+      const data = doc.data();
+      availableRates.set(data.monthKey, data.rate);
+    });
+
+    if (availableRates.size === 0) {
+      return { success: true, message: "No interest rates found to apply." };
+    }
+
+    // Get all existing transactions for this investor
+    const existingTransactionsQuery = await transactionsRef
+      .where("investorId", "==", investorId)
+      .orderBy("date", "asc")
+      .get();
+
+    const allTransactions = existingTransactionsQuery.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        investorId: data.investorId,
+        investorName: data.investorName,
+        type: data.type,
+        amount: data.amount,
+        date: data.date.toDate()
+      };
+    });
+
+    // Separate non-interest transactions from interest transactions
+    const nonInterestTransactions = allTransactions.filter(t => t.type !== 'interest');
+    const interestTransactions = allTransactions.filter(t => t.type === 'interest');
+
+    // Delete all existing interest transactions
+    const batch = admin.firestore().batch();
+    interestTransactions.forEach(transaction => {
+      batch.delete(transactionsRef.doc(transaction.id));
+    });
+
+    // Calculate new interest for each month
+    let totalInterestApplied = 0;
+    let processedMonths = 0;
+
+    // Get all months that have rates and transactions
+    const monthsWithRates = Array.from(availableRates.keys()).sort();
+    const monthsWithTransactions = new Set();
+    
+    nonInterestTransactions.forEach(transaction => {
+      const monthKey = `${transaction.date.getFullYear()}-${String(transaction.date.getMonth() + 1).padStart(2, '0')}`;
+      monthsWithTransactions.add(monthKey);
+    });
+
+    // Process each month that has both rates and transactions
+    for (const monthKey of monthsWithRates) {
+      if (!monthsWithTransactions.has(monthKey)) continue;
+      
+      const rate = availableRates.get(monthKey);
+      const year = parseInt(monthKey.split('-')[0], 10);
+      const month = parseInt(monthKey.split('-')[1], 10) - 1;
+      const monthEndDate = new Date(year, month, new Date(year, month + 1, 0).getDate());
+
+      // Calculate balance at the end of this month
+      let balanceAtMonthEnd = 0;
+      for (const transaction of nonInterestTransactions) {
+        if (transaction.date <= monthEndDate) {
+          if (transaction.type === 'invest' || transaction.type === 'deposit' || transaction.type === 'interest') {
+            balanceAtMonthEnd += transaction.amount;
+          } else if (transaction.type === 'withdraw') {
+            balanceAtMonthEnd -= transaction.amount;
+          }
+        }
+      }
+
+      if (balanceAtMonthEnd > 0) {
+        const interestAmount = balanceAtMonthEnd * rate;
+        
+        // Create new interest transaction
+        const transactionDocRef = transactionsRef.doc();
+        batch.set(transactionDocRef, {
+          investorId: investorId,
+          investorName: investor.name,
+          date: admin.firestore.Timestamp.fromDate(monthEndDate),
+          type: 'interest',
+          amount: interestAmount,
+        });
+
+        totalInterestApplied += interestAmount;
+        processedMonths++;
+      }
+    }
+
+    // Update investor balance (remove old interest, add new interest)
+    const oldInterestTotal = interestTransactions.reduce((sum, t) => sum + t.amount, 0);
+    const newBalance = (investor.balance || 0) - oldInterestTotal + totalInterestApplied;
+    batch.update(investorDoc.ref, { balance: newBalance });
+
+    await batch.commit();
+
+    logger.info(`Recalculated interest for investor ${investorId}:`, {
+      months: processedMonths,
+      totalInterest: totalInterestApplied,
+      oldInterest: oldInterestTotal
+    });
+
+    return { 
+      success: true, 
+      message: `Successfully recalculated interest for ${processedMonths} months. Total interest: ₹${totalInterestApplied.toFixed(2)}`,
+      processedMonths,
+      totalInterestApplied
+    };
+
+  } catch (error) {
+    logger.error("Error recalculating interest:", error);
+    throw new HttpsError("internal", "An unexpected error occurred while recalculating interest.");
+  }
+});
+
+/**
  * Deletes an investor and all their associated data
  */
 export const deleteInvestor = onCall(async (request) => {

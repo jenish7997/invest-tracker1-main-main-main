@@ -3,6 +3,7 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { InvestmentService } from '../../services/investment.service';
 import { AuthService } from '../../services/auth.service';
+import { LoggerService } from '../../services/logger.service';
 import { Investor } from '../../models';
 import { Subscription } from 'rxjs';
 
@@ -40,7 +41,8 @@ export class ReportComponent implements OnInit, OnDestroy {
 
   constructor(
     private investmentService: InvestmentService,
-    private authService: AuthService
+    private authService: AuthService,
+    private logger: LoggerService
   ) { }
 
   ngOnInit() {
@@ -51,13 +53,13 @@ export class ReportComponent implements OnInit, OnDestroy {
         rates.forEach(rate => {
           this.interestRates.set(rate.monthKey, rate.rate);
         });
-        console.log('Interest rates updated:', this.interestRates);
+        this.logger.debug('Interest rates updated', this.interestRates);
         
         // Refresh reports when rates change
         this.refreshReports();
       },
       error: (error) => {
-        console.error('Error loading interest rates:', error);
+        this.logger.error('Error loading interest rates', error);
         this.error = 'Error loading interest rates';
         this.loading = false;
       }
@@ -106,14 +108,14 @@ export class ReportComponent implements OnInit, OnDestroy {
 
   // Public method to manually refresh reports (useful for debugging)
   public refreshReportsManually() {
-    console.log('Manually refreshing reports...');
+    this.logger.debug('Manually refreshing reports...');
     this.refreshReports();
   }
 
   loadAllInvestorsReports() {
     this.investmentService.listInvestors().subscribe({
       next: (investors) => {
-        console.log('Investors loaded:', investors);
+        this.logger.debug('Investors loaded', investors);
         if (investors.length === 0) {
           this.loading = false;
           return;
@@ -127,14 +129,14 @@ export class ReportComponent implements OnInit, OnDestroy {
               this.loading = false;
             }
           }).catch(error => {
-            console.error('Error generating report for investor:', investor.name, error);
+            this.logger.error('Error generating report for investor', error);
             this.error = 'Error loading investor data';
             this.loading = false;
           });
         });
       },
       error: (error) => {
-        console.error('Error loading investors:', error);
+        this.logger.error('Error loading investors', error);
         this.error = 'Error loading investors from database';
         this.loading = false;
       }
@@ -142,14 +144,14 @@ export class ReportComponent implements OnInit, OnDestroy {
   }
 
   loadUserReport(userId: string, userName: string) {
-    console.log('Loading user report for:', userName, 'UID:', userId);
-    console.log('Current reports count before loading:', this.reports.length);
+    this.logger.debug('Loading user report', { userName, userId });
+    this.logger.debug('Current reports count before loading', { count: this.reports.length });
     
     this.generateReport(userId, userName).then(() => {
-      console.log('User report loaded. Total reports:', this.reports.length);
+      this.logger.debug('User report loaded', { totalReports: this.reports.length });
       this.loading = false;
     }).catch(error => {
-      console.error('Error generating user report:', error);
+      this.logger.error('Error generating user report', error);
       this.error = 'Error loading user data';
       this.loading = false;
     });
@@ -158,14 +160,14 @@ export class ReportComponent implements OnInit, OnDestroy {
   async generateReport(investorId: string, investorName: string): Promise<void> {
     try {
       const transactions = await this.investmentService.computeBalances(investorId);
-      console.log('Transactions for', investorName, ':', transactions);
+      this.logger.logFinancialData(`Transactions for ${investorName}`, transactions);
       
       let principal = 0;
       let totalInterest = 0;
       const monthlyInterestMap = new Map<string, { amount: number; rate: number }>();
 
       transactions.forEach(t => {
-        console.log('Processing transaction:', t.type, t.amount, t.date);
+        this.logger.debug('Processing transaction', { type: t.type, amount: t.amount, date: t.date });
         if (t.type === 'invest' || t.type === 'deposit') {
           principal += t.amount;
         } else if (t.type === 'interest') {
@@ -182,7 +184,7 @@ export class ReportComponent implements OnInit, OnDestroy {
             rate: rate 
           });
           
-          console.log('Interest transaction found:', t.amount, 'for month:', monthKey);
+          this.logger.debug('Interest transaction found', { amount: t.amount, month: monthKey });
         }
       });
 
@@ -207,14 +209,14 @@ export class ReportComponent implements OnInit, OnDestroy {
       if (existingReportIndex >= 0) {
         // Replace existing report
         this.reports[existingReportIndex] = newReport;
-        console.log('Updated existing report for:', investorName);
+        this.logger.debug('Updated existing report', { investorName });
       } else {
         // Add new report
         this.reports.push(newReport);
-        console.log('Added new report for:', investorName);
+        this.logger.debug('Added new report', { investorName });
       }
     } catch (error) {
-      console.error('Error in generateReport:', error);
+      this.logger.error('Error in generateReport', error);
       throw error;
     }
   }
@@ -244,7 +246,7 @@ export class ReportComponent implements OnInit, OnDestroy {
 
       // Validate the date
       if (isNaN(dateObj.getTime())) {
-        console.error('Invalid date in getMonthKey:', date);
+        this.logger.error('Invalid date in getMonthKey', { date });
         return 'invalid';
       }
 
@@ -252,7 +254,7 @@ export class ReportComponent implements OnInit, OnDestroy {
       const month = (dateObj.getMonth() + 1).toString().padStart(2, '0');
       return `${year}-${month}`;
     } catch (error) {
-      console.error('Error in getMonthKey:', date, error);
+      this.logger.error('Error in getMonthKey', { date, error });
       return 'invalid';
     }
   }
@@ -281,23 +283,22 @@ export class ReportComponent implements OnInit, OnDestroy {
         const percentage = (rate * 100).toFixed(1);
         return `${percentage}%`;
       } else {
-        console.warn('No interest rate found for month:', monthKey);
+        this.logger.warn('No interest rate found for month', { monthKey });
         return 'N/A';
       }
     } catch (error) {
-      console.error('Error getting interest rate for date:', dateString, error);
+      this.logger.error('Error getting interest rate for date', { dateString, error });
       return 'N/A';
     }
   }
 
   // Debug helper method to test date parsing and rate lookup
   debugDateParsing(dateString: string): void {
-    console.log('=== Debug Date Parsing ===');
-    console.log('Input:', dateString);
-    console.log('Type:', typeof dateString);
-    console.log('Month key:', this.getMonthKey(dateString));
-    console.log('Interest rate:', this.getTransactionInterestRate(dateString));
-    console.log('Available rates:', Array.from(this.interestRates.entries()));
-    console.log('==========================');
+    this.logger.debug('=== Debug Date Parsing ===');
+    this.logger.debug('Input', { dateString, type: typeof dateString });
+    this.logger.debug('Month key', { monthKey: this.getMonthKey(dateString) });
+    this.logger.debug('Interest rate', { rate: this.getTransactionInterestRate(dateString) });
+    this.logger.debug('Available rates', Array.from(this.interestRates.entries()));
+    this.logger.debug('==========================');
   }
 }

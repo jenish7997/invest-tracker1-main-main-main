@@ -2,6 +2,8 @@ import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { InvestmentService } from '../../services/investment.service';
+import { NotificationService } from '../../services/notification.service';
+import { LoggerService } from '../../services/logger.service';
 import { Investor, Transaction } from '../../models';
 
 @Component({
@@ -16,7 +18,12 @@ export class AddmoneyComponent implements OnInit {
   transactionForm!: FormGroup;
   SelectedInvestorTransection: any[]=[];
 
-  constructor(private fb: FormBuilder, private svc: InvestmentService) {}
+  constructor(
+    private fb: FormBuilder, 
+    private svc: InvestmentService,
+    private notificationService: NotificationService,
+    private logger: LoggerService
+  ) {}
 
   ngOnInit() {
     this.transactionForm = this.fb.group({
@@ -58,9 +65,11 @@ export class AddmoneyComponent implements OnInit {
           amount: null,
           date: ''
         });
+        // Notify that a transaction was added
+        this.notificationService.notifyTransactionAdded();
       })
       .catch(error => {
-        console.error('Error saving transaction:', error);
+        this.logger.error('Error saving transaction', error);
       });
   } else {
     this.transactionForm.markAllAsTouched();

@@ -2,12 +2,17 @@
 import { Injectable } from '@angular/core';
 import { Functions, httpsCallable } from '@angular/fire/functions';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { LoggerService } from './logger.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AdminService {
-  constructor(private functions: Functions, private snackBar: MatSnackBar) {}
+  constructor(
+    private functions: Functions, 
+    private snackBar: MatSnackBar,
+    private logger: LoggerService
+  ) {}
 
   async setAdminClaim(email: string): Promise<void> {
     try {
@@ -15,7 +20,7 @@ export class AdminService {
       const result = await setAdminClaim({ email });
       this.snackBar.open(result.data['message'], 'Close', { duration: 3000 });
     } catch (error) {
-      console.error('Error setting admin claim:', error);
+      this.logger.error('Error setting admin claim', error);
       this.snackBar.open('An error occurred while setting the admin claim.', 'Close', {
         duration: 3000,
       });
@@ -29,7 +34,7 @@ export class AdminService {
       this.snackBar.open(result.data['message'], 'Close', { duration: 3000 });
       return true;
     } catch (error: any) {
-      console.error('Error setting up initial admin:', error);
+      this.logger.error('Error setting up initial admin', error);
       let errorMessage = 'An error occurred while setting up the admin account.';
       
       if (error.code === 'functions/permission-denied') {
@@ -54,12 +59,12 @@ export class AdminService {
       this.snackBar.open(data.message, 'Close', { duration: 5000 });
       
       if (data.deletedInvestors && data.deletedInvestors.length > 0) {
-        console.log('Deleted orphaned investors:', data.deletedInvestors);
+        this.logger.debug('Deleted orphaned investors', data.deletedInvestors);
       }
       
       return true;
     } catch (error: any) {
-      console.error('Error cleaning up orphaned investors:', error);
+      this.logger.error('Error cleaning up orphaned investors', error);
       let errorMessage = 'An error occurred while cleaning up orphaned data.';
       
       if (error.message) {
@@ -84,7 +89,7 @@ export class AdminService {
       this.snackBar.open(data.message, 'Close', { duration: 5000 });
       
       if (data.processedMonths > 0) {
-        console.log('Applied historical interest:', {
+        this.logger.debug('Applied historical interest', {
           months: data.processedMonths,
           totalInterest: data.totalInterestApplied
         });
@@ -92,8 +97,36 @@ export class AdminService {
       
       return true;
     } catch (error: any) {
-      console.error('Error applying historical interest:', error);
+      this.logger.error('Error applying historical interest', error);
       let errorMessage = 'An error occurred while applying historical interest.';
+      
+      if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      this.snackBar.open(errorMessage, 'Close', { duration: 5000 });
+      return false;
+    }
+  }
+
+  async recalculateInterestForInvestor(investorId: string): Promise<boolean> {
+    try {
+      const recalculateInterest = httpsCallable(this.functions, 'recalculateInterestForInvestor');
+      const result = await recalculateInterest({ investorId });
+      const data: any = result.data;
+      
+      this.snackBar.open(data.message, 'Close', { duration: 5000 });
+      
+      this.logger.debug('Successfully recalculated interest for investor', {
+        investorId: investorId,
+        processedMonths: data.processedMonths,
+        totalInterest: data.totalInterestApplied
+      });
+      
+      return true;
+    } catch (error: any) {
+      this.logger.error('Error recalculating interest', error);
+      let errorMessage = 'An error occurred while recalculating interest.';
       
       if (error.message) {
         errorMessage = error.message;
@@ -112,14 +145,14 @@ export class AdminService {
       
       this.snackBar.open(data.message, 'Close', { duration: 5000 });
       
-      console.log('Successfully deleted investor:', {
+      this.logger.debug('Successfully deleted investor', {
         investorId: investorId,
         deletedTransactions: data.deletedTransactions
       });
       
       return true;
     } catch (error: any) {
-      console.error('Error deleting investor:', error);
+      this.logger.error('Error deleting investor', error);
       let errorMessage = 'An error occurred while deleting the investor.';
       
       if (error.message) {
