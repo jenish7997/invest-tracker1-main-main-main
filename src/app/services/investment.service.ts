@@ -1,6 +1,6 @@
 
 import { Injectable, inject } from '@angular/core';
-import { Firestore, collection, collectionData, doc, setDoc, addDoc, query, where, getDocs, Timestamp, orderBy, getDoc } from '@angular/fire/firestore';
+import { Firestore, collection, collectionData, doc, setDoc, addDoc, query, where, getDocs, Timestamp, orderBy, getDoc, deleteDoc } from '@angular/fire/firestore';
 import { Observable } from 'rxjs';
 import { Transaction, Investor, MonthlyRate } from '../models';
 
@@ -188,6 +188,11 @@ export class InvestmentService {
         complete: () => observer.complete()
       });
     });
+  }
+
+  deleteTransaction(transactionId: string): Promise<void> {
+    const transactionDoc = doc(this.firestore, 'transactions', transactionId);
+    return deleteDoc(transactionDoc);
   }
 
   private formatDateForDisplay(date: Date): string {

@@ -60,6 +60,10 @@
                 <span class="material-icons">attach_money</span>
                 Amount
               </th>
+              <th class="actions-column">
+                <span class="material-icons">settings</span>
+                Actions
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -73,6 +77,14 @@
               <td class="amount-cell" [ngClass]="r.type === 'invest' || r.type === 'deposit' || r.type === 'interest' ? 'positive' : 'negative'">
                 <span class="amount-symbol">{{ r.type === 'invest' || r.type === 'deposit' || r.type === 'interest' ? '+' : '-' }}</span>
                 ₹{{ r.amount | number:'1.2-2' }}
+              </td>
+              <td class="actions-cell">
+                <button 
+                  class="delete-btn" 
+                  (click)="deleteTransaction(r)"
+                  title="Delete Transaction">
+                  <span class="material-icons">delete</span>
+                </button>
               </td>
             </tr>
           </tbody>
