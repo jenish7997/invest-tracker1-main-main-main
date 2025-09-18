@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 import { InvestmentService } from '../../services/investment.service';
 import { AuthService } from '../../services/auth.service';
 import { LoggerService } from '../../services/logger.service';
+import { AdminService } from '../../services/admin.service';
 import { Investor } from '../../models';
 import { Subscription } from 'rxjs';
 
@@ -42,7 +43,8 @@ export class ReportComponent implements OnInit, OnDestroy {
   constructor(
     private investmentService: InvestmentService,
     private authService: AuthService,
-    private logger: LoggerService
+    private logger: LoggerService,
+    private adminService: AdminService
   ) { }
 
   ngOnInit() {
@@ -154,6 +156,10 @@ export class ReportComponent implements OnInit, OnDestroy {
           try {
             const transactions = await this.investmentService.computeBalances(investor.id!);
             console.log(`[DEBUG] Transactions for ${investor.name}:`, transactions);
+            
+            // Show interest transactions specifically
+            const interestTransactions = transactions.filter(t => t.type === 'interest');
+            console.log(`[DEBUG] Interest transactions for ${investor.name}:`, interestTransactions);
           } catch (error) {
             console.error(`[DEBUG] Error loading transactions for ${investor.name}:`, error);
           }
@@ -166,6 +172,9 @@ export class ReportComponent implements OnInit, OnDestroy {
     this.investmentService.listRates().subscribe({
       next: (rates) => {
         console.log('[DEBUG] Rates found:', rates);
+        rates.forEach(rate => {
+          console.log(`[DEBUG] Rate: ${rate.monthKey} = ${rate.rate} (${(rate.rate * 100).toFixed(1)}%)`);
+        });
       },
       error: (error) => {
         console.error('[DEBUG] Error loading rates:', error);
@@ -173,6 +182,27 @@ export class ReportComponent implements OnInit, OnDestroy {
     });
 
     console.log('[DEBUG] === END DEBUGGING ===');
+  }
+
+  // Method to trigger interest recalculation for testing
+  public async testInterestRecalculation() {
+    console.log('[DEBUG] === TESTING INTEREST RECALCULATION ===');
+    
+    this.investmentService.listInvestors().subscribe({
+      next: async (investors) => {
+        for (const investor of investors) {
+          console.log(`[DEBUG] Recalculating interest for ${investor.name}...`);
+          try {
+            const result = await this.adminService.recalculateInterestForInvestor(investor.id!);
+            console.log(`[DEBUG] Recalculation result for ${investor.name}:`, result);
+          } catch (error) {
+            console.error(`[DEBUG] Error recalculating for ${investor.name}:`, error);
+          }
+        }
+      }
+    });
+    
+    console.log('[DEBUG] === END INTEREST RECALCULATION TEST ===');
   }
 
   loadAllInvestorsReports() {
@@ -264,6 +294,9 @@ export class ReportComponent implements OnInit, OnDestroy {
       const monthlyInterestBreakdown: MonthlyInterest[] = Array.from(monthlyInterestMap.entries())
         .map(([month, data]) => ({ month, amount: data.amount, rate: data.rate }))
         .sort((a, b) => a.month.localeCompare(b.month));
+
+      console.log(`[DEBUG] Monthly interest breakdown for ${investorName}:`, monthlyInterestBreakdown);
+      console.log(`[DEBUG] Available interest rates:`, Array.from(this.interestRates.entries()));
 
       const grownCapital = transactions.length > 0 ? transactions[transactions.length - 1].balance : 0;
 

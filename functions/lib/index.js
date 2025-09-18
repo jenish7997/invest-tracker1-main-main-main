@@ -286,26 +286,24 @@ exports.recalculateInterestForInvestor = (0, https_1.onCall)({
         // Calculate new interest for each month
         let totalInterestApplied = 0;
         let processedMonths = 0;
-        // Get all months that have rates and transactions
+        // Get all months that have rates
         const monthsWithRates = Array.from(availableRates.keys()).sort();
-        const monthsWithTransactions = new Set();
-        nonInterestTransactions.forEach(transaction => {
-            const monthKey = `${transaction.date.getFullYear()}-${String(transaction.date.getMonth() + 1).padStart(2, '0')}`;
-            monthsWithTransactions.add(monthKey);
-        });
-        // Process each month that has both rates and transactions
+        console.log(`[DEBUG] Available rates:`, availableRates);
+        console.log(`[DEBUG] Months with rates:`, monthsWithRates);
+        // Process each month that has rates (for compounding interest, we need to process all months with rates)
+        let runningBalance = 0; // This will track the compounding balance
         for (const monthKey of monthsWithRates) {
-            if (!monthsWithTransactions.has(monthKey))
-                continue;
+            console.log(`[DEBUG] Processing month: ${monthKey}`);
             const rate = availableRates.get(monthKey);
             const year = parseInt(monthKey.split('-')[0], 10);
             const month = parseInt(monthKey.split('-')[1], 10) - 1;
             const monthEndDate = new Date(year, month, new Date(year, month + 1, 0).getDate());
-            // Calculate balance at the end of this month
+            // Calculate balance at the end of this month (including ALL transactions up to this point)
             let balanceAtMonthEnd = 0;
+            // Add all non-interest transactions that occurred up to the end of this month
             for (const transaction of nonInterestTransactions) {
                 if (transaction.date <= monthEndDate) {
-                    if (transaction.type === 'invest' || transaction.type === 'deposit' || transaction.type === 'interest') {
+                    if (transaction.type === 'invest' || transaction.type === 'deposit') {
                         balanceAtMonthEnd += transaction.amount;
                     }
                     else if (transaction.type === 'withdraw') {
@@ -313,8 +311,12 @@ exports.recalculateInterestForInvestor = (0, https_1.onCall)({
                     }
                 }
             }
+            // Add all interest from previous months (compounding)
+            balanceAtMonthEnd += runningBalance;
+            console.log(`[DEBUG] Month ${monthKey}: balanceAtMonthEnd = ${balanceAtMonthEnd}, rate = ${rate}`);
             if (balanceAtMonthEnd > 0) {
                 const interestAmount = balanceAtMonthEnd * rate;
+                console.log(`[DEBUG] Month ${monthKey}: interestAmount = ${interestAmount}`);
                 // Create new interest transaction
                 const transactionDocRef = transactionsRef.doc();
                 batch.set(transactionDocRef, {
@@ -325,8 +327,14 @@ exports.recalculateInterestForInvestor = (0, https_1.onCall)({
                     amount: interestAmount,
                     createdAt: admin.firestore.Timestamp.now()
                 });
+                // Update running balance for next month (compounding)
+                runningBalance += interestAmount;
+                console.log(`[DEBUG] Month ${monthKey}: runningBalance = ${runningBalance}`);
                 totalInterestApplied += interestAmount;
                 processedMonths++;
+            }
+            else {
+                console.log(`[DEBUG] Month ${monthKey}: No interest calculated (balanceAtMonthEnd = ${balanceAtMonthEnd})`);
             }
         }
         // Update investor balance (remove old interest, add new interest)
@@ -592,28 +600,27 @@ exports.applyMonthlyInterestAndRecalculate = (0, https_1.onCall)({
         let processedCount = 0;
         for (const doc of investorsSnapshot.docs) {
             const investor = doc.data();
-            // Calculate the principal amount for this specific month
-            // by getting all transactions up to the beginning of the current month
-            const startOfMonth = new Date(year, month, 1);
-            // Get all transactions for this investor up to the beginning of current month
+            // Calculate the balance at the end of this month (including all transactions up to this point)
+            const monthEndDate = new Date(year, month, new Date(year, month + 1, 0).getDate());
+            // Get all transactions for this investor up to the end of current month
             const transactionsQuery = await transactionsRef
                 .where('investorId', '==', doc.id)
-                .where('date', '<', admin.firestore.Timestamp.fromDate(startOfMonth))
+                .where('date', '<=', admin.firestore.Timestamp.fromDate(monthEndDate))
                 .orderBy('date', 'asc')
                 .get();
-            let principalAmount = 0;
+            let balanceAtMonthEnd = 0;
             transactionsQuery.docs.forEach(transactionDoc => {
                 const transaction = transactionDoc.data();
                 if (transaction.type === 'invest' || transaction.type === 'deposit' || transaction.type === 'interest') {
-                    principalAmount += transaction.amount;
+                    balanceAtMonthEnd += transaction.amount;
                 }
                 else if (transaction.type === 'withdraw') {
-                    principalAmount -= transaction.amount;
+                    balanceAtMonthEnd -= transaction.amount;
                 }
             });
-            // Only apply interest if there's a positive principal amount
-            if (principalAmount > 0) {
-                const interestAmount = principalAmount * rate;
+            // Only apply interest if there's a positive balance
+            if (balanceAtMonthEnd > 0) {
+                const interestAmount = balanceAtMonthEnd * rate;
                 const newBalance = (investor.balance || 0) + interestAmount;
                 // Create an interest transaction
                 const transactionDocRef = transactionsRef.doc();
