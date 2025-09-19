@@ -167,10 +167,23 @@ export class FinancialTestingComponent implements OnInit {
       return dateCompare;
     });
 
-    const expectedOrder = ['2024-01-01', '2024-01-15T10:00:00', '2024-01-15T14:00:00'];
-    const actualOrder = sortedTransactions.map(t => t.date.toISOString());
+    // Check if transactions are in correct order by comparing timestamps
+    const isCorrectOrder = sortedTransactions.every((transaction, index) => {
+      if (index === 0) return true;
+      const prevTransaction = sortedTransactions[index - 1];
+      const currentDate = transaction.date.getTime();
+      const prevDate = prevTransaction.date.getTime();
+      
+      if (currentDate === prevDate) {
+        return transaction.createdAt.getTime() >= prevTransaction.createdAt.getTime();
+      }
+      return currentDate >= prevDate;
+    });
 
-    const passed = JSON.stringify(actualOrder) === JSON.stringify(expectedOrder);
+    const expectedOrder = ['2024-01-01', '2024-01-15', '2024-01-15'];
+    const actualOrder = sortedTransactions.map(t => t.date.toISOString().split('T')[0]);
+
+    const passed = isCorrectOrder && JSON.stringify(actualOrder) === JSON.stringify(expectedOrder);
     
     this.testResults.push({
       testName: 'Transaction Ordering Test',

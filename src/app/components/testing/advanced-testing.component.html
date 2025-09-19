@@ -1,0 +1,208 @@
+<div class="advanced-testing-container">
+  <div class="testing-header">
+    <h1 class="testing-title">
+      <span class="material-icons">psychology</span>
+      Advanced Financial Testing Suite
+    </h1>
+    <p class="testing-subtitle">Comprehensive testing for complex scenarios, edge cases, and high-performance scenarios</p>
+  </div>
+
+  <div class="testing-controls">
+    <button 
+      class="run-advanced-tests-btn" 
+      (click)="runAdvancedTests()" 
+      [disabled]="isRunningTests">
+      <span class="material-icons">{{ isRunningTests ? 'hourglass_empty' : 'rocket_launch' }}</span>
+      {{ isRunningTests ? 'Running Advanced Tests...' : 'Run Advanced Tests' }}
+    </button>
+    
+    <button 
+      class="clear-btn" 
+      (click)="clearResults()" 
+      [disabled]="isRunningTests">
+      <span class="material-icons">clear</span>
+      Clear Results
+    </button>
+    
+    <button 
+      class="export-btn" 
+      (click)="exportResults()" 
+      [disabled]="testResults.length === 0">
+      <span class="material-icons">download</span>
+      Export Results
+    </button>
+  </div>
+
+  <!-- Progress Bar -->
+  <div class="progress-container" *ngIf="isRunningTests">
+    <div class="progress-header">
+      <span class="progress-label">Running Advanced Tests</span>
+      <span class="progress-percentage">{{ testProgress | number:'1.0-0' }}%</span>
+    </div>
+    <div class="progress-bar">
+      <div class="progress-fill" [style.width.%]="testProgress"></div>
+    </div>
+    <div class="current-test" *ngIf="currentTest">
+      <span class="material-icons">play_arrow</span>
+      {{ currentTest }}
+    </div>
+  </div>
+
+  <!-- Complex Scenarios -->
+  <div class="scenarios-section">
+    <h2 class="scenarios-title">Complex Test Scenarios</h2>
+    <div class="scenarios-grid">
+      <div class="scenario-card" *ngFor="let scenario of complexScenarios" [ngClass]="scenario.complexity.toLowerCase()">
+        <div class="scenario-header">
+          <h3 class="scenario-name">{{ scenario.name }}</h3>
+          <span class="complexity-badge" [ngClass]="scenario.complexity.toLowerCase()">
+            {{ scenario.complexity }}
+          </span>
+        </div>
+        <p class="scenario-description">{{ scenario.description }}</p>
+        <div class="scenario-stats">
+          <div class="stat-item">
+            <span class="material-icons">timeline</span>
+            <span>{{ scenario.transactions.length }} transactions</span>
+          </div>
+          <div class="stat-item">
+            <span class="material-icons">assessment</span>
+            <span>{{ scenario.expectedResults | json }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Test Results -->
+  <div class="test-results" *ngIf="testResults.length > 0">
+    <h2 class="results-title">Advanced Test Results</h2>
+    
+    <!-- Summary Cards -->
+    <div class="results-summary">
+      <div class="summary-card passed">
+        <span class="material-icons">check_circle</span>
+        <div class="summary-content">
+          <h3>{{ getPassedCount() }}</h3>
+          <p>Passed</p>
+        </div>
+      </div>
+      
+      <div class="summary-card failed">
+        <span class="material-icons">error</span>
+        <div class="summary-content">
+          <h3>{{ getFailedCount() }}</h3>
+          <p>Failed</p>
+        </div>
+      </div>
+      
+      <div class="summary-card total">
+        <span class="material-icons">assessment</span>
+        <div class="summary-content">
+          <h3>{{ testResults.length }}</h3>
+          <p>Total</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Category Tabs -->
+    <div class="category-tabs">
+      <button 
+        class="tab-button" 
+        *ngFor="let category of ['All', 'Performance', 'Financial Math', 'Portfolio Management', 'Data Integrity', 'Edge Cases', 'Concurrency']"
+        [class.active]="selectedCategory === category"
+        (click)="selectedCategory = category">
+        {{ category }}
+      </button>
+    </div>
+
+    <!-- Complexity Filter -->
+    <div class="complexity-filter">
+      <label>Filter by Complexity:</label>
+      <select [(ngModel)]="selectedComplexity" class="complexity-select">
+        <option value="All">All</option>
+        <option value="Low">Low</option>
+        <option value="Medium">Medium</option>
+        <option value="High">High</option>
+        <option value="Critical">Critical</option>
+      </select>
+    </div>
+
+    <!-- Results List -->
+    <div class="results-list">
+      <div class="result-item" 
+           *ngFor="let result of getFilteredResults()" 
+           [ngClass]="['result-item', result.passed ? 'passed' : 'failed', result.complexity.toLowerCase()]">
+        <div class="result-status">
+          <span class="material-icons">{{ result.passed ? 'check' : 'close' }}</span>
+        </div>
+        
+        <div class="result-details">
+          <div class="result-header">
+            <h4 class="result-name">{{ result.testName }}</h4>
+            <div class="result-meta">
+              <span class="result-category">{{ result.category }}</span>
+              <span class="result-complexity" [ngClass]="result.complexity.toLowerCase()">
+                {{ result.complexity }}
+              </span>
+              <span class="result-time">{{ result.executionTime | number:'1.2-2' }}ms</span>
+            </div>
+          </div>
+          
+          <div class="result-values">
+            <div class="value-item">
+              <span class="value-label">Expected:</span>
+              <span class="value-content">{{ result.expected | json }}</span>
+            </div>
+            <div class="value-item">
+              <span class="value-label">Actual:</span>
+              <span class="value-content">{{ result.actual | json }}</span>
+            </div>
+          </div>
+          
+          <div class="result-error" *ngIf="result.error">
+            <span class="material-icons">warning</span>
+            <span>{{ result.error }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Testing Information -->
+  <div class="testing-info">
+    <h3>Advanced Testing Features:</h3>
+    <div class="features-grid">
+      <div class="feature-item">
+        <span class="material-icons">speed</span>
+        <h4>Performance Testing</h4>
+        <p>High-frequency trading simulation, memory usage, and execution time analysis</p>
+      </div>
+      <div class="feature-item">
+        <span class="material-icons">calculate</span>
+        <h4>Complex Financial Math</h4>
+        <p>Compound interest, varying rates, negative rates, and precision testing</p>
+      </div>
+      <div class="feature-item">
+        <span class="material-icons">groups</span>
+        <h4>Multi-Investor Portfolio</h4>
+        <p>Portfolio aggregation, individual calculations, and performance metrics</p>
+      </div>
+      <div class="feature-item">
+        <span class="material-icons">warning</span>
+        <h4>Edge Case Stress</h4>
+        <p>Maximum numbers, minimum numbers, invalid dates, and boundary conditions</p>
+      </div>
+      <div class="feature-item">
+        <span class="material-icons">security</span>
+        <h4>Data Integrity</h4>
+        <p>Transaction uniqueness, balance consistency, validation, and error handling</p>
+      </div>
+      <div class="feature-item">
+        <span class="material-icons">sync</span>
+        <h4>Concurrency Testing</h4>
+        <p>Simultaneous operations, data consistency, and race condition detection</p>
+      </div>
+    </div>
+  </div>
+</div>
