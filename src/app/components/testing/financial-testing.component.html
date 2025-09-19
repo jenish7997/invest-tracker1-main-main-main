@@ -1,0 +1,123 @@
+<div class="testing-container">
+  <div class="testing-header">
+    <h1 class="testing-title">
+      <span class="material-icons">science</span>
+      Financial Logic Testing Suite
+    </h1>
+    <p class="testing-subtitle">Comprehensive testing for all financial calculations and transaction logic</p>
+  </div>
+
+  <div class="testing-controls">
+    <button 
+      class="run-tests-btn" 
+      (click)="runAllTests()" 
+      [disabled]="isRunningTests">
+      <span class="material-icons">{{ isRunningTests ? 'hourglass_empty' : 'play_arrow' }}</span>
+      {{ isRunningTests ? 'Running Tests...' : 'Run All Tests' }}
+    </button>
+    
+    <button 
+      class="clear-btn" 
+      (click)="clearResults()" 
+      [disabled]="isRunningTests">
+      <span class="material-icons">clear</span>
+      Clear Results
+    </button>
+    
+    <button 
+      class="export-btn" 
+      (click)="exportResults()" 
+      [disabled]="testResults.length === 0">
+      <span class="material-icons">download</span>
+      Export Results
+    </button>
+  </div>
+
+  <div class="test-scenarios">
+    <h2 class="scenarios-title">Test Scenarios</h2>
+    <div class="scenarios-grid">
+      <div class="scenario-card" *ngFor="let scenario of testScenarios">
+        <h3 class="scenario-name">{{ scenario.name }}</h3>
+        <div class="scenario-details">
+          <p><strong>Transactions:</strong> {{ scenario.transactions.length }}</p>
+          <p><strong>Expected Balance:</strong> ₹{{ scenario.expectedBalance | number:'1.2-2' }}</p>
+          <p><strong>Expected Interest:</strong> ₹{{ scenario.expectedInterest | number:'1.2-2' }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="test-results" *ngIf="testResults.length > 0">
+    <h2 class="results-title">Test Results</h2>
+    
+    <div class="results-summary">
+      <div class="summary-card passed">
+        <span class="material-icons">check_circle</span>
+        <div class="summary-content">
+          <h3>{{ getPassedCount() }}</h3>
+          <p>Passed</p>
+        </div>
+      </div>
+      
+      <div class="summary-card failed">
+        <span class="material-icons">error</span>
+        <div class="summary-content">
+          <h3>{{ getFailedCount() }}</h3>
+          <p>Failed</p>
+        </div>
+      </div>
+      
+      <div class="summary-card total">
+        <span class="material-icons">assessment</span>
+        <div class="summary-content">
+          <h3>{{ testResults.length }}</h3>
+          <p>Total</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="results-list">
+      <div class="result-item" 
+           *ngFor="let result of testResults" 
+           [ngClass]="result.passed ? 'passed' : 'failed'">
+        <div class="result-status">
+          <span class="material-icons">{{ result.passed ? 'check' : 'close' }}</span>
+        </div>
+        
+        <div class="result-details">
+          <h4 class="result-name">{{ result.testName }}</h4>
+          
+          <div class="result-values">
+            <div class="value-item">
+              <span class="value-label">Expected:</span>
+              <span class="value-content">{{ result.expected }}</span>
+            </div>
+            <div class="value-item">
+              <span class="value-label">Actual:</span>
+              <span class="value-content">{{ result.actual }}</span>
+            </div>
+          </div>
+          
+          <div class="result-error" *ngIf="result.error">
+            <span class="material-icons">warning</span>
+            <span>{{ result.error }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="testing-info">
+    <h3>What These Tests Cover:</h3>
+    <ul>
+      <li>✅ Basic balance calculations (investments, withdrawals)</li>
+      <li>✅ Transaction chronological ordering</li>
+      <li>✅ Interest rate calculations</li>
+      <li>✅ Edge cases (zero amounts, negative amounts, large numbers)</li>
+      <li>✅ Real data consistency</li>
+      <li>✅ Mathematical accuracy and precision</li>
+      <li>✅ Floating point calculations</li>
+      <li>✅ Percentage and compound calculations</li>
+    </ul>
+  </div>
+</div>

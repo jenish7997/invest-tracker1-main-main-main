@@ -10,6 +10,7 @@ import { WithdrawComponent } from './components/withdraw/withdraw.component';
 import { InterestComponent } from './components/interest/interest.component';
 import { AddInvestorComponent } from './components/add-investor/add-investor.component';
 import { ReportComponent } from './components/report/report.component';
+import { FinancialTestingComponent } from './components/testing/financial-testing.component';
 import { UserGuard } from './guards/user.guard';
 
 export const routes: Routes = [
@@ -22,5 +23,6 @@ export const routes: Routes = [
   { path: 'interest', component: InterestComponent, canActivate: [AuthGuard] },
   { path: 'add-investor', component: AddInvestorComponent, canActivate: [AuthGuard] },
   { path: 'report', component: ReportComponent, canActivate: [UserGuard] },
+  { path: 'testing', component: FinancialTestingComponent, canActivate: [AuthGuard] },
   { path: '', redirectTo: '/login', pathMatch: 'full' }
 ];
