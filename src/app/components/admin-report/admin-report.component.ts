@@ -1,11 +1,9 @@
-
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { InvestmentService } from '../../services/investment.service';
-import { UserInterestService } from '../../services/user-interest.service';
+import { AdminInterestService } from '../../services/admin-interest.service';
 import { AuthService } from '../../services/auth.service';
 import { LoggerService } from '../../services/logger.service';
-import { AdvancedReportTestingComponent } from './advanced-report-testing.component';
 import { Investor } from '../../models';
 import { Subscription } from 'rxjs';
 
@@ -26,18 +24,17 @@ interface ReportData {
 }
 
 @Component({
-  selector: 'app-report',
+  selector: 'app-admin-report',
   standalone: true,
-  imports: [CommonModule, AdvancedReportTestingComponent],
-  templateUrl: './report.component.html',
-  styleUrls: ['./report.component.css']
+  imports: [CommonModule],
+  templateUrl: './admin-report.component.html',
+  styleUrls: ['./admin-report.component.css']
 })
-export class ReportComponent implements OnInit, OnDestroy {
+export class AdminReportComponent implements OnInit, OnDestroy {
   reports: ReportData[] = [];
   isAdmin: boolean = false;
   loading: boolean = true;
   error: string = '';
-  showAdvancedTesting: boolean = false;
   interestRates: Map<string, number> = new Map(); // Store rates by monthKey
   private currentUser: any = null; // Store current user info
   private userSubscription?: Subscription;
@@ -45,34 +42,34 @@ export class ReportComponent implements OnInit, OnDestroy {
 
   constructor(
     private investmentService: InvestmentService,
-    private userInterestService: UserInterestService,
+    private adminInterestService: AdminInterestService,
     private authService: AuthService,
     private logger: LoggerService
   ) { }
 
   ngOnInit() {
-    console.log('[DEBUG] Report component ngOnInit called');
+    console.log('[DEBUG] Admin Report component ngOnInit called');
     
-    // Subscribe to user interest rate changes (using original rates collection)
-    this.ratesSubscription = this.userInterestService.listUserRates().subscribe({
+    // Subscribe to admin interest rate changes
+    this.ratesSubscription = this.adminInterestService.listAdminRates().subscribe({
       next: (rates) => {
-        console.log('[DEBUG] User interest rates updated:', rates);
+        console.log('[DEBUG] Admin interest rates updated:', rates);
         this.interestRates.clear();
         rates.forEach(rate => {
           this.interestRates.set(rate.monthKey, rate.rate);
         });
-        this.logger.debug('User interest rates updated', this.interestRates);
+        this.logger.debug('Admin interest rates updated', this.interestRates);
         
         // Only refresh reports if user is already loaded
         if (this.currentUser) {
-          console.log('[DEBUG] Refreshing reports due to user rate change');
+          console.log('[DEBUG] Refreshing admin reports due to rate change');
           this.refreshReports();
         }
       },
       error: (error) => {
-        console.error('[DEBUG] Error loading user interest rates:', error);
-        this.logger.error('Error loading user interest rates', error);
-        this.error = 'Error loading user interest rates. Please try refreshing the page.';
+        console.error('[DEBUG] Error loading admin interest rates:', error);
+        this.logger.error('Error loading admin interest rates', error);
+        this.error = 'Error loading admin interest rates';
         this.loading = false;
       }
     });
@@ -230,7 +227,7 @@ export class ReportComponent implements OnInit, OnDestroy {
 
       console.log(`[DEBUG] Monthly interest breakdown for ${investorName}:`, monthlyInterestBreakdown);
       console.log(`[DEBUG] Average return percentage for ${investorName}:`, averageReturnPercentage);
-      console.log(`[DEBUG] Available user interest rates:`, Array.from(this.interestRates.entries()));
+      console.log(`[DEBUG] Available interest rates:`, Array.from(this.interestRates.entries()));
 
       const grownCapital = transactions.length > 0 ? transactions[transactions.length - 1].balance : 0;
 
@@ -340,13 +337,6 @@ export class ReportComponent implements OnInit, OnDestroy {
       this.logger.error('Error getting interest rate for date', { dateString, error });
       return 'N/A';
     }
-  }
-
-  toggleAdvancedTesting(): void {
-    console.log('Advanced testing button clicked!');
-    this.showAdvancedTesting = !this.showAdvancedTesting;
-    console.log('showAdvancedTesting is now:', this.showAdvancedTesting);
-    this.logger.debug('Advanced testing toggled', { showAdvancedTesting: this.showAdvancedTesting });
   }
 
 }

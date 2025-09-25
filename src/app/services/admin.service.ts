@@ -132,30 +132,5 @@ export class AdminService {
     }
   }
 
-  async initializeSampleRates(): Promise<boolean> {
-    try {
-      const initializeRates = httpsCallable(this.functions, 'initializeSampleRates');
-      const result = await initializeRates({});
-      const data: any = result.data;
-      
-      this.snackBar.open(data.message, 'Close', { duration: 5000 });
-      
-      this.logger.debug('Successfully initialized sample rates', {
-        message: data.message
-      });
-      
-      return true;
-    } catch (error: any) {
-      this.logger.error('Error initializing sample rates', error);
-      let errorMessage = 'An error occurred while initializing sample rates.';
-      
-      if (error.message) {
-        errorMessage = error.message;
-      }
-      
-      this.snackBar.open(errorMessage, 'Close', { duration: 5000 });
-      return false;
-    }
-  }
 
 }

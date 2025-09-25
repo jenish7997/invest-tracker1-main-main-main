@@ -40,13 +40,32 @@
     </table>
   </section>
 
-  <!-- Admin Actions Section -->
+
+  <!-- Admin Navigation Section -->
   <section class="card">
-    <h2>Admin Actions</h2>
-    <div class="admin-actions">
-      <button class="init-rates-btn" (click)="initializeSampleRates()" [disabled]="isInitializingRates">
-        {{ isInitializingRates ? 'Initializing...' : 'Initialize Sample Interest Rates' }}
-      </button>
+    <h2>Admin Pages</h2>
+    <div class="admin-navigation">
+      <a routerLink="/admin-interest" class="nav-link">
+        <span class="material-icons">trending_up</span>
+        <div class="nav-content">
+          <h3>Admin Interest Rates</h3>
+          <p>Manage interest rates and apply monthly interest calculations</p>
+        </div>
+      </a>
+      <a routerLink="/admin-report" class="nav-link">
+        <span class="material-icons">assessment</span>
+        <div class="nav-content">
+          <h3>Admin Reports</h3>
+          <p>View comprehensive investment reports for all investors</p>
+        </div>
+      </a>
+      <a routerLink="/basic-testing" class="nav-link">
+        <span class="material-icons">bug_report</span>
+        <div class="nav-content">
+          <h3>Basic Testing</h3>
+          <p>Run automated tests for core financial functionality</p>
+        </div>
+      </a>
     </div>
   </section>
 </div>

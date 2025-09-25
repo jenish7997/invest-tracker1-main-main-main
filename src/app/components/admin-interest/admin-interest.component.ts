@@ -1,18 +1,18 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators, FormsModule } from '@angular/forms';
-import { UserInterestService } from '../../services/user-interest.service';
+import { AdminInterestService } from '../../services/admin-interest.service';
 import { MonthlyRate } from '../../models';
 import { CommonModule } from '@angular/common';
 import { Functions, httpsCallable, HttpsCallableResult } from '@angular/fire/functions';
 
 @Component({
-  selector: 'app-interest',
-  templateUrl: './interest.component.html',
-  styleUrls: ['./interest.component.css'],
+  selector: 'app-admin-interest',
+  templateUrl: './admin-interest.component.html',
+  styleUrls: ['./admin-interest.component.css'],
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, FormsModule],
 })
-export class InterestComponent implements OnInit {
+export class AdminInterestComponent implements OnInit {
   rateForm!: FormGroup;
   rates: MonthlyRate[] = [];
   loading: boolean = false;
@@ -28,7 +28,7 @@ export class InterestComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     private functions: Functions,
-    public userInterestSvc: UserInterestService
+    public adminInterestSvc: AdminInterestService
   ) { }
 
   ngOnInit() {
@@ -37,24 +37,9 @@ export class InterestComponent implements OnInit {
       rate: [0, [Validators.required, Validators.min(0), Validators.max(100)]], // Rate as a percentage (e.g., 5 for 5%)
     });
 
-    this.loadRates();
-  }
-
-  private loadRates() {
-    this.userInterestSvc.listUserRates().subscribe({
-      next: (r) => {
-        this.rates = r.sort((a, b) => a.monthKey.localeCompare(b.monthKey));
-      },
-      error: (error) => {
-        console.error('Error loading user rates:', error);
-        this.errorMessage = 'Error loading interest rates. Please try again.';
-      }
+    this.adminInterestSvc.listAdminRates().subscribe(r => {
+      this.rates = r.sort((a, b) => a.monthKey.localeCompare(b.monthKey));
     });
-  }
-
-  // Public method to manually refresh rates
-  public refreshRates() {
-    this.loadRates();
   }
 
   async applyInterest() {
@@ -68,20 +53,19 @@ export class InterestComponent implements OnInit {
     // Convert percentage to decimal (e.g., 12 -> 0.12)
     const decimalRate = rate / 100;
 
-    // First, save the rate to rates collection
-    await this.userInterestSvc.setUserMonthlyRate({ monthKey, rate: decimalRate });
-
-    const applyInterestFn = httpsCallable(this.functions, 'applyMonthlyInterestAndRecalculate');
+    const applyInterestFn = httpsCallable(this.functions, 'applyAdminMonthlyInterestAndRecalculate');
 
     try {
       const result: HttpsCallableResult = await applyInterestFn({ monthKey, rate: decimalRate });
-      this.successMessage = (result.data as any).message || 'User interest applied successfully!';
-      this.successMessage += ' Please refresh your reports to see the updated calculations.';
+      this.successMessage = (result.data as any).message || 'Admin interest applied successfully!';
+      this.successMessage += ' Please refresh your admin reports to see the updated calculations.';
 
       this.rateForm.reset();
 
       // Refresh the rates list
-      this.loadRates();
+      this.adminInterestSvc.listAdminRates().subscribe(r => {
+        this.rates = r.sort((a, b) => a.monthKey.localeCompare(b.monthKey));
+      });
 
     } catch (error: any) {
       this.errorMessage = error.message || 'Error applying interest. Please try again.';
@@ -122,25 +106,24 @@ export class InterestComponent implements OnInit {
     const newRate = this.editRateValue / 100; // Convert percentage to decimal
 
     try {
-      // First, ensure the rate exists in rates collection
-      await this.userInterestSvc.setUserMonthlyRate({ monthKey: rate.monthKey, rate: newRate });
-      
-      // Call backend function to update the rate and recalculate interest
-      const updateRateFn = httpsCallable(this.functions, 'updateInterestRate');
+      // Call backend function to update the admin rate and recalculate interest
+      const updateRateFn = httpsCallable(this.functions, 'updateAdminInterestRate');
       const result: HttpsCallableResult = await updateRateFn({ 
         monthKey: rate.monthKey, 
         oldRate: this.originalRate,
         newRate: newRate 
       });
       
-      this.successMessage = (result.data as any).message || 'User interest rate updated successfully!';
-      this.successMessage += ' Please refresh your reports to see the updated calculations.';
+      this.successMessage = (result.data as any).message || 'Admin interest rate updated successfully!';
+      this.successMessage += ' Please refresh your admin reports to see the updated calculations.';
 
-      // Update the local rates array immediately
+      // Update the local rates array
       this.rates[index].rate = newRate;
 
-      // Refresh the rates list to ensure UI is updated
-      this.loadRates();
+      // Refresh the rates list
+      this.adminInterestSvc.listAdminRates().subscribe(r => {
+        this.rates = r.sort((a, b) => a.monthKey.localeCompare(b.monthKey));
+      });
 
       this.cancelEdit();
 

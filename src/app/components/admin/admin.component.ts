@@ -18,7 +18,6 @@ export class AdminComponent implements OnInit {
   transactions: Transaction[] = [];
   isDeleting = false;
   isRecalculating = false;
-  isInitializingRates = false;
 
   constructor(
     private svc: InvestmentService,
@@ -96,37 +95,6 @@ export class AdminComponent implements OnInit {
     }
   }
 
-  async initializeSampleRates(): Promise<void> {
-    const confirmed = confirm(
-      `Initialize sample interest rates?\n\n` +
-      `This will add sample rates for the current year to help you test the interest page.\n` +
-      `The rates will be:\n` +
-      `• January: 10%\n` +
-      `• February: 12%\n` +
-      `• March: 8%\n` +
-      `• April: 15%\n` +
-      `• May: 9%\n` +
-      `• June: 11%\n\n` +
-      `You can edit these rates later from the Interest page.`
-    );
-    
-    if (!confirmed) return;
-
-    this.isInitializingRates = true;
-    try {
-      const success = await this.adminService.initializeSampleRates();
-      if (success) {
-        alert('Sample interest rates initialized successfully! You can now use the Interest page.');
-      } else {
-        alert('Failed to initialize sample rates. Please try again.');
-      }
-    } catch (error) {
-      console.error('Error initializing sample rates:', error);
-      alert('Error initializing sample rates. Please try again.');
-    } finally {
-      this.isInitializingRates = false;
-    }
-  }
 
   onLogout(): void {
     this.authService.logout();

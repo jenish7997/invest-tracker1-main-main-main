@@ -10,9 +10,10 @@ import { WithdrawComponent } from './components/withdraw/withdraw.component';
 import { InterestComponent } from './components/interest/interest.component';
 import { AddInvestorComponent } from './components/add-investor/add-investor.component';
 import { ReportComponent } from './components/report/report.component';
-import { FinancialTestingComponent } from './components/testing/financial-testing.component';
-import { AdvancedTestingComponent } from './components/testing/advanced-testing.component';
 import { UserGuard } from './guards/user.guard';
+import { AdminInterestComponent } from './components/admin-interest/admin-interest.component';
+import { AdminReportComponent } from './components/admin-report/admin-report.component';
+import { BasicTestingComponent } from './components/testing/basic-testing.component';
 
 export const routes: Routes = [
   { path: 'login', component: LoginComponent },
@@ -24,7 +25,8 @@ export const routes: Routes = [
   { path: 'interest', component: InterestComponent, canActivate: [AuthGuard] },
   { path: 'add-investor', component: AddInvestorComponent, canActivate: [AuthGuard] },
   { path: 'report', component: ReportComponent, canActivate: [UserGuard] },
-  { path: 'testing', component: FinancialTestingComponent, canActivate: [AuthGuard] },
-  { path: 'advanced-testing', component: AdvancedTestingComponent, canActivate: [AuthGuard] },
+  { path: 'admin-interest', component: AdminInterestComponent, canActivate: [AuthGuard] },
+  { path: 'admin-report', component: AdminReportComponent, canActivate: [AuthGuard] },
+  { path: 'basic-testing', component: BasicTestingComponent, canActivate: [AuthGuard] },
   { path: '', redirectTo: '/login', pathMatch: 'full' }
 ];

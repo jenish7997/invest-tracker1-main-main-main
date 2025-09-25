@@ -1,0 +1,244 @@
+<div class="advanced-testing-container">
+  <div class="testing-header">
+    <h1>Advanced Report Testing Suite</h1>
+    <p>Comprehensive 5-year automated testing for all investment scenarios</p>
+    <div class="testing-stats">
+      <div class="stat-item">
+        <span class="stat-label">Test Scenarios:</span>
+        <span class="stat-value">{{ testScenarios.length }}</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">Duration:</span>
+        <span class="stat-value">5 Years</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">Features Tested:</span>
+        <span class="stat-value">All</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="testing-controls">
+    <button 
+      class="run-advanced-tests-btn" 
+      (click)="runAdvancedReportTests()" 
+      [disabled]="isRunningTests">
+      <span class="material-icons">{{ isRunningTests ? 'hourglass_empty' : 'play_arrow' }}</span>
+      {{ isRunningTests ? 'Running Advanced Tests...' : 'Run Advanced Report Tests' }}
+    </button>
+    
+    <button 
+      class="clear-results-btn" 
+      (click)="clearResults()" 
+      [disabled]="isRunningTests">
+      <span class="material-icons">clear</span>
+      Clear Results
+    </button>
+  </div>
+
+  <!-- Progress Section -->
+  <div class="progress-section" *ngIf="isRunningTests">
+    <div class="progress-info">
+      <span class="current-test">{{ currentTest }}</span>
+      <span class="progress-percentage">{{ testProgress | number:'1.0-0' }}%</span>
+    </div>
+    <div class="progress-bar">
+      <div class="progress-fill" [style.width.%]="testProgress"></div>
+    </div>
+  </div>
+
+  <!-- Test Scenarios Overview -->
+  <div class="scenarios-overview" *ngIf="!isRunningTests && testResults.length === 0">
+    <h2>Test Scenarios ({{ testScenarios.length }})</h2>
+    <div class="scenarios-grid">
+      <div 
+        *ngFor="let scenario of testScenarios" 
+        class="scenario-card">
+        <div class="scenario-header">
+          <h3>{{ scenario.name }}</h3>
+          <span class="scenario-transactions">{{ scenario.transactions.length }} transactions</span>
+        </div>
+        <p class="scenario-description">{{ scenario.description }}</p>
+        <div class="scenario-stats">
+          <div class="scenario-stat">
+            <span class="stat-label">Duration:</span>
+            <span class="stat-value">{{ getDurationText(scenario) }}</span>
+          </div>
+          <div class="scenario-stat">
+            <span class="stat-label">Initial Investment:</span>
+            <span class="stat-value">{{ formatCurrency(getInitialInvestment(scenario)) }}</span>
+          </div>
+          <div class="scenario-stat">
+            <span class="stat-label">Expected Final:</span>
+            <span class="stat-value">{{ formatCurrency(scenario.expectedResults.finalBalance) }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Test Results -->
+  <div class="test-results" *ngIf="testResults.length > 0">
+    <h2>Test Results</h2>
+    
+    <div class="test-summary">
+      <div class="summary-item">
+        <span class="summary-label">Total Tests:</span>
+        <span class="summary-value">{{ testResults.length }}</span>
+      </div>
+      <div class="summary-item">
+        <span class="summary-label">Passed:</span>
+        <span class="summary-value passed">{{ getPassedTestsCount() }}</span>
+      </div>
+      <div class="summary-item">
+        <span class="summary-label">Failed:</span>
+        <span class="summary-value failed">{{ getFailedTestsCount() }}</span>
+      </div>
+      <div class="summary-item">
+        <span class="summary-label">Success Rate:</span>
+        <span class="summary-value">{{ getSuccessRate() }}%</span>
+      </div>
+    </div>
+
+    <div class="test-list">
+      <div 
+        *ngFor="let result of testResults" 
+        class="test-item"
+        [ngClass]="getStatusClass(result.status)">
+        
+        <div class="test-header">
+          <span class="test-icon">{{ getStatusIcon(result.status) }}</span>
+          <span class="test-name">{{ result.scenarioName }}</span>
+          <span class="test-duration" *ngIf="result.duration">
+            {{ result.duration }}ms
+          </span>
+        </div>
+        
+        <div class="test-message">
+          {{ result.message }}
+        </div>
+
+        <div class="test-details" *ngIf="result.details">
+          <div class="details-section">
+            <h4>Expected Results:</h4>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <span class="detail-label">Final Balance:</span>
+                <span class="detail-value">{{ formatCurrency(result.details.expected.finalBalance) }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Total Invested:</span>
+                <span class="detail-value">{{ formatCurrency(result.details.expected.totalInvested) }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Total Withdrawn:</span>
+                <span class="detail-value">{{ formatCurrency(result.details.expected.totalWithdrawn) }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Total Interest:</span>
+                <span class="detail-value">{{ formatCurrency(result.details.expected.totalInterest) }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="details-section">
+            <h4>Actual Results:</h4>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <span class="detail-label">Final Balance:</span>
+                <span class="detail-value">{{ formatCurrency(result.details.actual.finalBalance) }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Total Invested:</span>
+                <span class="detail-value">{{ formatCurrency(result.details.actual.totalInvested) }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Total Withdrawn:</span>
+                <span class="detail-value">{{ formatCurrency(result.details.actual.totalWithdrawn) }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Total Interest:</span>
+                <span class="detail-value">{{ formatCurrency(result.details.actual.totalInterest) }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="details-section" *ngIf="result.details.tolerance">
+            <h4>Verification:</h4>
+            <div class="verification-grid">
+              <div class="verification-item">
+                <span class="verification-label">Tolerance:</span>
+                <span class="verification-value">{{ formatPercentage(result.details.tolerance) }}</span>
+              </div>
+              <div class="verification-item">
+                <span class="verification-label">Balance Match:</span>
+                <span class="verification-value" [ngClass]="result.details.balanceMatch ? 'match-pass' : 'match-fail'">
+                  {{ result.details.balanceMatch ? '✅' : '❌' }}
+                </span>
+              </div>
+              <div class="verification-item">
+                <span class="verification-label">Invested Match:</span>
+                <span class="verification-value" [ngClass]="result.details.investedMatch ? 'match-pass' : 'match-fail'">
+                  {{ result.details.investedMatch ? '✅' : '❌' }}
+                </span>
+              </div>
+              <div class="verification-item">
+                <span class="verification-label">Withdrawn Match:</span>
+                <span class="verification-value" [ngClass]="result.details.withdrawnMatch ? 'match-pass' : 'match-fail'">
+                  {{ result.details.withdrawnMatch ? '✅' : '❌' }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Features Tested -->
+  <div class="features-tested">
+    <h3>Features Tested in This Suite:</h3>
+    <div class="features-grid">
+      <div class="feature-category">
+        <h4>Investment Operations</h4>
+        <ul>
+          <li>Initial investments</li>
+          <li>Monthly deposits</li>
+          <li>Irregular deposits</li>
+          <li>Emergency withdrawals</li>
+          <li>Planned withdrawals</li>
+        </ul>
+      </div>
+      <div class="feature-category">
+        <h4>Interest Calculations</h4>
+        <ul>
+          <li>Compound interest</li>
+          <li>Monthly interest rates</li>
+          <li>Variable interest rates</li>
+          <li>Interest on interest</li>
+          <li>Interest on deposits</li>
+        </ul>
+      </div>
+      <div class="feature-category">
+        <h4>Report Generation</h4>
+        <ul>
+          <li>Balance calculations</li>
+          <li>Transaction history</li>
+          <li>Monthly breakdowns</li>
+          <li>Total summaries</li>
+          <li>Performance metrics</li>
+        </ul>
+      </div>
+      <div class="feature-category">
+        <h4>Edge Cases</h4>
+        <ul>
+          <li>Zero balance periods</li>
+          <li>High-frequency trading</li>
+          <li>Large transactions</li>
+          <li>Seasonal patterns</li>
+          <li>Long-term scenarios</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
