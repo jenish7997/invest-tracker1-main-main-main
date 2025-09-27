@@ -53,7 +53,6 @@ export class AdminReportComponent implements OnInit, OnDestroy {
   ) { }
 
   ngOnInit() {
-    console.log('[DEBUG] Admin Report component ngOnInit called');
     
     // Subscribe to admin interest rate changes (using adminRates collection)
     console.log('[ADMIN-REPORT] Subscribing to ADMIN rates from adminRates collection...');
@@ -83,7 +82,6 @@ export class AdminReportComponent implements OnInit, OnDestroy {
         
         // Only refresh reports if user is already loaded
         if (this.currentUser) {
-          console.log('[DEBUG] Refreshing admin reports due to rate change');
           this.refreshReports();
         }
       },
@@ -91,7 +89,6 @@ export class AdminReportComponent implements OnInit, OnDestroy {
         console.error('[DEBUG] Error loading admin interest rates:', error);
         this.logger.error('Error loading admin interest rates', error);
         // Don't set error here, just log it - reports can still work without rates
-        console.log('[DEBUG] Continuing without admin interest rates - reports will show N/A for rates');
         
         // Still refresh reports even if rates failed
         if (this.currentUser) {
@@ -102,7 +99,6 @@ export class AdminReportComponent implements OnInit, OnDestroy {
 
     // Subscribe to user changes
     this.userSubscription = this.authService.currentUser$.subscribe(user => {
-      console.log('[DEBUG] User state changed:', user);
       if (user) {
         this.currentUser = user; // Store current user info
         this.isAdmin = user.isAdmin;
@@ -110,14 +106,12 @@ export class AdminReportComponent implements OnInit, OnDestroy {
         this.error = '';
         this.reports = []; // Clear existing reports to prevent duplicates
         
-        console.log('[DEBUG] User authenticated, loading reports. isAdmin:', this.isAdmin);
         // Load reports after user is authenticated
         this.refreshReports();
       } else {
         this.currentUser = null;
         this.loading = false;
         this.error = 'User not authenticated';
-        console.log('[DEBUG] User not authenticated');
       }
     });
   }
@@ -132,20 +126,16 @@ export class AdminReportComponent implements OnInit, OnDestroy {
   }
 
   private refreshReports() {
-    console.log('[DEBUG] refreshReports called. isAdmin:', this.isAdmin, 'currentUser:', this.currentUser);
     try {
       if (this.isAdmin) {
-        console.log('[DEBUG] Loading all investors reports');
         this.loadAllInvestorsReports();
       } else {
         // For non-admin users, we need to get the current user info
         // This is a bit tricky since we're already in a user subscription
         // We'll store the current user info to use here
         if (this.currentUser) {
-          console.log('[DEBUG] Loading user report for:', this.currentUser.displayName);
           this.loadUserReport(this.currentUser.uid, this.currentUser.displayName);
         } else {
-          console.log('[DEBUG] No current user, cannot load reports');
           this.error = 'No current user available';
           this.loading = false;
         }
@@ -161,13 +151,10 @@ export class AdminReportComponent implements OnInit, OnDestroy {
 
 
   loadAllInvestorsReports() {
-    console.log('[DEBUG] loadAllInvestorsReports called');
     this.investmentService.listInvestors().subscribe({
       next: (investors) => {
-        console.log('[DEBUG] Investors loaded:', investors);
         this.logger.debug('Investors loaded', investors);
         if (investors.length === 0) {
-          console.log('[DEBUG] No investors found');
           this.loading = false;
           return;
         }
@@ -176,12 +163,9 @@ export class AdminReportComponent implements OnInit, OnDestroy {
         let hasError = false;
         
         investors.forEach(investor => {
-          console.log(`[DEBUG] Generating report for investor: ${investor.name} (${investor.id})`);
           this.generateReport(investor.id, investor.name).then(() => {
             reportsGenerated++;
-            console.log(`[DEBUG] Report generated for ${investor.name}. Total: ${reportsGenerated}/${investors.length}`);
             if (reportsGenerated === investors.length && !hasError) {
-              console.log('[DEBUG] All reports generated. Setting loading to false.');
               this.loading = false;
             }
           }).catch(error => {

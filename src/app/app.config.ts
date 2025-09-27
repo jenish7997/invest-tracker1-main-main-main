@@ -6,7 +6,6 @@ import { initializeApp, provideFirebaseApp } from '@angular/fire/app';
 import { getAuth, provideAuth } from '@angular/fire/auth';
 import { getFirestore, provideFirestore, connectFirestoreEmulator } from '@angular/fire/firestore';
 import { getFunctions, provideFunctions } from '@angular/fire/functions';
-import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { provideAnimations } from '@angular/platform-browser/animations';
 import { environment } from '../environments/environment';
 import { AuthService } from './services/auth.service';
@@ -46,7 +45,6 @@ export const appConfig: ApplicationConfig = {
       return functions;
     }),
     provideAnimations(),
-    importProvidersFrom(MatSnackBarModule),
     AuthService,
     localeConfig
   ]

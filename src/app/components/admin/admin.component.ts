@@ -1,6 +1,5 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
 import { InvestmentService } from '../../services/investment.service';
 import { AuthService } from '../../services/auth.service';
 import { AdminService } from '../../services/admin.service';
@@ -9,7 +8,7 @@ import { Investor, Transaction } from '../../models';
 @Component({
   selector: 'app-admin',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule],
   templateUrl: './admin.component.html',
   styleUrls: ['./admin.component.css']
 })
@@ -17,7 +16,6 @@ export class AdminComponent implements OnInit {
   investors: Investor[] = [];
   transactions: Transaction[] = [];
   isDeleting = false;
-  isInitializingRates = false;
 
   constructor(
     private svc: InvestmentService,
@@ -55,11 +53,10 @@ export class AdminComponent implements OnInit {
     this.isDeleting = true;
     
     try {
-      const success = await this.adminService.deleteInvestor(investorId);
-      if (success) {
-        // Refresh the investors list after deletion
-        this.loadInvestors();
-      }
+      // Note: Investor deletion functionality has been removed
+      // Investors can only be managed through Firebase Console
+      console.log('Investor deletion is disabled. Please use Firebase Console to manage investors.');
+      alert('Investor deletion is disabled. Please use Firebase Console to manage investors.');
     } catch (error) {
       console.error('Error deleting investor:', error);
     } finally {
@@ -67,29 +64,6 @@ export class AdminComponent implements OnInit {
     }
   }
 
-  async initializeSampleRates(): Promise<void> {
-    if (this.isInitializingRates) return;
-    
-    const confirmed = confirm(
-      'Initialize sample interest rates?\n\n' +
-      'This will set up default interest rates for the system.'
-    );
-    
-    if (!confirmed) return;
-    
-    this.isInitializingRates = true;
-    
-    try {
-      // Add your sample rates initialization logic here
-      console.log('Initializing sample rates...');
-      // You can implement this method in your admin service
-      // await this.adminService.initializeSampleRates();
-    } catch (error) {
-      console.error('Error initializing sample rates:', error);
-    } finally {
-      this.isInitializingRates = false;
-    }
-  }
 
   onLogout(): void {
     this.authService.logout();

@@ -14,7 +14,6 @@ import { Investor, Transaction } from '../../models';
 export class WithdrawComponent implements OnInit {
   investors: Investor[] = [];
   transactionForm!: FormGroup;
-  SelectedInvestorTransection: any[]=[];
 
   constructor(private fb: FormBuilder, private svc: InvestmentService) {}
 

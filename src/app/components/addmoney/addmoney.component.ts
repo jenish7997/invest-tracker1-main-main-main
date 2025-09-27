@@ -16,7 +16,6 @@ import { Investor, Transaction } from '../../models';
 export class AddmoneyComponent implements OnInit {
   investors: Investor[] = [];
   transactionForm!: FormGroup;
-  SelectedInvestorTransection: any[]=[];
 
   constructor(
     private fb: FormBuilder, 
