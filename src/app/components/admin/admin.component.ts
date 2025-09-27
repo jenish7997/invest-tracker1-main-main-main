@@ -18,6 +18,7 @@ export class AdminComponent implements OnInit {
   transactions: Transaction[] = [];
   isDeleting = false;
   isRecalculating = false;
+  isInitializingRates = false;
 
   constructor(
     private svc: InvestmentService,
@@ -95,6 +96,29 @@ export class AdminComponent implements OnInit {
     }
   }
 
+  async initializeSampleRates(): Promise<void> {
+    if (this.isInitializingRates) return;
+    
+    const confirmed = confirm(
+      'Initialize sample interest rates?\n\n' +
+      'This will set up default interest rates for the system.'
+    );
+    
+    if (!confirmed) return;
+    
+    this.isInitializingRates = true;
+    
+    try {
+      // Add your sample rates initialization logic here
+      console.log('Initializing sample rates...');
+      // You can implement this method in your admin service
+      // await this.adminService.initializeSampleRates();
+    } catch (error) {
+      console.error('Error initializing sample rates:', error);
+    } finally {
+      this.isInitializingRates = false;
+    }
+  }
 
   onLogout(): void {
     this.authService.logout();

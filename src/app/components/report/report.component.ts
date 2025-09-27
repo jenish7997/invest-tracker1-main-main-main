@@ -54,9 +54,15 @@ export class ReportComponent implements OnInit, OnDestroy {
     console.log('[DEBUG] Report component ngOnInit called');
     
     // Subscribe to user interest rate changes (using original rates collection)
+    console.log('[USER-REPORT] Subscribing to USER rates from rates collection...');
     this.ratesSubscription = this.userInterestService.listUserRates().subscribe({
       next: (rates) => {
-        console.log('[DEBUG] User interest rates updated:', rates);
+        console.log('[USER-REPORT] ⚠️ USER interest rates updated from RATES collection:', rates);
+        console.log('[USER-REPORT] ⚠️ This should ONLY contain user rates, NOT admin rates!');
+        rates.forEach(rate => {
+          console.log(`[USER-REPORT] ⚠️ Found rate: ${rate.monthKey} = ${(rate.rate * 100).toFixed(2)}%`);
+        });
+        
         this.interestRates.clear();
         rates.forEach(rate => {
           this.interestRates.set(rate.monthKey, rate.rate);
@@ -126,11 +132,6 @@ export class ReportComponent implements OnInit, OnDestroy {
     }
   }
 
-  // Public method to manually refresh reports (useful for debugging)
-  public refreshReportsManually() {
-    this.logger.debug('Manually refreshing reports...');
-    this.refreshReports();
-  }
 
 
   loadAllInvestorsReports() {
@@ -348,5 +349,6 @@ export class ReportComponent implements OnInit, OnDestroy {
     console.log('showAdvancedTesting is now:', this.showAdvancedTesting);
     this.logger.debug('Advanced testing toggled', { showAdvancedTesting: this.showAdvancedTesting });
   }
+
 
 }

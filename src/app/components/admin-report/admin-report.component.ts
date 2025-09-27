@@ -6,6 +6,8 @@ import { AuthService } from '../../services/auth.service';
 import { LoggerService } from '../../services/logger.service';
 import { Investor } from '../../models';
 import { Subscription } from 'rxjs';
+import { take } from 'rxjs/operators';
+import { Functions, httpsCallable } from '@angular/fire/functions';
 
 interface MonthlyInterest {
   month: string;
@@ -35,7 +37,8 @@ export class AdminReportComponent implements OnInit, OnDestroy {
   isAdmin: boolean = false;
   loading: boolean = true;
   error: string = '';
-  interestRates: Map<string, number> = new Map(); // Store rates by monthKey
+  isRecalculating: boolean = false;
+  adminInterestRates: Map<string, number> = new Map(); // Store ADMIN rates by monthKey - ISOLATED from user rates
   private currentUser: any = null; // Store current user info
   private userSubscription?: Subscription;
   private ratesSubscription?: Subscription;
@@ -44,21 +47,38 @@ export class AdminReportComponent implements OnInit, OnDestroy {
     private investmentService: InvestmentService,
     private adminInterestService: AdminInterestService,
     private authService: AuthService,
-    private logger: LoggerService
+    private logger: LoggerService,
+    private functions: Functions
   ) { }
 
   ngOnInit() {
     console.log('[DEBUG] Admin Report component ngOnInit called');
     
-    // Subscribe to admin interest rate changes
+    // Subscribe to admin interest rate changes (using adminRates collection)
+    console.log('[ADMIN-REPORT] Subscribing to ADMIN rates from adminRates collection...');
+    console.log('[ADMIN-REPORT] 🔍 AdminInterestRates map BEFORE subscription:', Array.from(this.adminInterestRates.entries()));
+    
     this.ratesSubscription = this.adminInterestService.listAdminRates().subscribe({
       next: (rates) => {
-        console.log('[DEBUG] Admin interest rates updated:', rates);
-        this.interestRates.clear();
+        console.log('[ADMIN-REPORT] ✅ ADMIN interest rates updated from ADMINRATES collection:', rates);
+        console.log('[ADMIN-REPORT] ✅ This should ONLY contain admin rates, NOT user rates!');
+        console.log('[ADMIN-REPORT] ✅ Admin rates count:', rates.length);
         rates.forEach(rate => {
-          this.interestRates.set(rate.monthKey, rate.rate);
+          console.log(`[ADMIN-REPORT] ✅ Found admin rate: ${rate.monthKey} = ${(rate.rate * 100).toFixed(2)}%`);
         });
-        this.logger.debug('Admin interest rates updated', this.interestRates);
+        
+        console.log('[ADMIN-REPORT] 🔍 Clearing adminInterestRates map...');
+        this.adminInterestRates.clear();
+        console.log('[ADMIN-REPORT] 🔍 AdminInterestRates map after clear:', Array.from(this.adminInterestRates.entries()));
+        
+        rates.forEach(rate => {
+          this.adminInterestRates.set(rate.monthKey, rate.rate);
+          console.log(`[ADMIN-REPORT] ✅ Set admin rate for ${rate.monthKey}: ${rate.rate}`);
+        });
+        this.logger.debug('Admin interest rates updated', this.adminInterestRates);
+        
+        console.log('[ADMIN-REPORT] 🔍 Final adminInterestRates map after loading:', Array.from(this.adminInterestRates.entries()));
+        console.log('[ADMIN-REPORT] 🔍 AdminInterestRates map size:', this.adminInterestRates.size);
         
         // Only refresh reports if user is already loaded
         if (this.currentUser) {
@@ -69,8 +89,13 @@ export class AdminReportComponent implements OnInit, OnDestroy {
       error: (error) => {
         console.error('[DEBUG] Error loading admin interest rates:', error);
         this.logger.error('Error loading admin interest rates', error);
-        this.error = 'Error loading admin interest rates';
-        this.loading = false;
+        // Don't set error here, just log it - reports can still work without rates
+        console.log('[DEBUG] Continuing without admin interest rates - reports will show N/A for rates');
+        
+        // Still refresh reports even if rates failed
+        if (this.currentUser) {
+          this.refreshReports();
+        }
       }
     });
 
@@ -107,26 +132,157 @@ export class AdminReportComponent implements OnInit, OnDestroy {
 
   private refreshReports() {
     console.log('[DEBUG] refreshReports called. isAdmin:', this.isAdmin, 'currentUser:', this.currentUser);
-    if (this.isAdmin) {
-      console.log('[DEBUG] Loading all investors reports');
-      this.loadAllInvestorsReports();
-    } else {
-      // For non-admin users, we need to get the current user info
-      // This is a bit tricky since we're already in a user subscription
-      // We'll store the current user info to use here
-      if (this.currentUser) {
-        console.log('[DEBUG] Loading user report for:', this.currentUser.displayName);
-        this.loadUserReport(this.currentUser.uid, this.currentUser.displayName);
+    try {
+      if (this.isAdmin) {
+        console.log('[DEBUG] Loading all investors reports');
+        this.loadAllInvestorsReports();
       } else {
-        console.log('[DEBUG] No current user, cannot load reports');
+        // For non-admin users, we need to get the current user info
+        // This is a bit tricky since we're already in a user subscription
+        // We'll store the current user info to use here
+        if (this.currentUser) {
+          console.log('[DEBUG] Loading user report for:', this.currentUser.displayName);
+          this.loadUserReport(this.currentUser.uid, this.currentUser.displayName);
+        } else {
+          console.log('[DEBUG] No current user, cannot load reports');
+          this.error = 'No current user available';
+          this.loading = false;
+        }
       }
+    } catch (error) {
+      console.error('[DEBUG] Error in refreshReports:', error);
+      this.error = 'Error refreshing reports: ' + error.message;
+      this.loading = false;
     }
   }
 
-  // Public method to manually refresh reports (useful for debugging)
-  public refreshReportsManually() {
-    this.logger.debug('Manually refreshing reports...');
-    this.refreshReports();
+
+  // Method to recalculate interest for all investors using admin rates
+  public async recalculateAllInterest() {
+    if (this.isRecalculating) return;
+    
+    const confirmed = confirm(
+      'Recalculate interest for all investors using ADMIN rates?\n\n' +
+      'This will:\n' +
+      '• Remove all existing interest transactions\n' +
+      '• Recalculate interest using ONLY admin rates from adminRates collection\n' +
+      '• Update all investors\' balances\n\n' +
+      'This ensures accurate interest calculation based on admin rates only.'
+    );
+    
+    if (!confirmed) return;
+    
+    this.isRecalculating = true;
+    this.error = '';
+    
+    try {
+      console.log('[ADMIN-REPORT] 🔥 Starting ADMIN interest recalculation for all investors...');
+      console.log('[ADMIN-REPORT] 🔥 Available admin rates:', Array.from(this.adminInterestRates.entries()));
+      
+      // Get all investors
+      const investors = await this.investmentService.listInvestors().pipe(take(1)).toPromise() as Investor[];
+      console.log(`[ADMIN-REPORT] 🔥 Found ${investors.length} investors to recalculate`);
+      
+      if (!investors || investors.length === 0) {
+        this.error = 'No investors found to recalculate interest for.';
+        this.isRecalculating = false;
+        return;
+      }
+      
+      let completed = 0;
+      let errors = 0;
+      
+      // Recalculate interest for each investor
+      for (const investor of investors) {
+        try {
+          console.log(`[ADMIN-REPORT] 🔥 Recalculating interest for investor: ${investor.name} (${investor.id})`);
+          
+          // Call the Firebase function to recalculate interest for this investor
+          const recalculateFn = httpsCallable(this.functions, 'recalculateInterestForInvestor');
+          const result = await recalculateFn({ investorId: investor.id });
+          
+          console.log(`[ADMIN-REPORT] 🔥 Recalculation result for ${investor.name}:`, result.data);
+          completed++;
+          
+        } catch (error) {
+          console.error(`[ADMIN-REPORT] 🔥 Error recalculating interest for ${investor.name}:`, error);
+          errors++;
+        }
+      }
+      
+      console.log(`[ADMIN-REPORT] 🔥 Interest recalculation completed. Success: ${completed}, Errors: ${errors}`);
+      
+      if (errors === 0) {
+        this.error = `Successfully recalculated interest for ${completed} investors using ADMIN rates! Refreshing reports...`;
+        // Refresh the reports after recalculation
+        this.refreshReports();
+      } else {
+        this.error = `Recalculated interest for ${completed} investors with ${errors} errors. Refreshing reports...`;
+        // Still refresh the reports
+        this.refreshReports();
+      }
+      
+    } catch (error) {
+      console.error('[ADMIN-REPORT] 🔥 Error in recalculateAllInterest:', error);
+      this.error = 'Error recalculating interest: ' + error.message;
+    } finally {
+      this.isRecalculating = false;
+    }
+  }
+
+  // Method to apply monthly interest using admin rates
+  public async applyAdminMonthlyInterest() {
+    if (this.isRecalculating) return;
+    
+    // Get current month
+    const now = new Date();
+    const currentMonth = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}`;
+    
+    // Get the admin rate for the current month
+    const adminRate = this.adminInterestRates.get(currentMonth);
+    if (!adminRate) {
+      this.error = `No admin rate found for ${currentMonth}. Please go to Admin Interest Rates page to set rates for this month.`;
+      return;
+    }
+    
+    const confirmed = confirm(
+      `Apply monthly interest for ${currentMonth}?\n\n` +
+      `Rate: ${(adminRate * 100).toFixed(2)}%\n\n` +
+      'This will:\n' +
+      '• Apply interest using admin rates for the current month\n' +
+      '• Only apply interest if there are no existing interest transactions for this month\n' +
+      '• Update all investors\' balances\n\n' +
+      'This uses the admin rates from the adminRates collection.'
+    );
+    
+    if (!confirmed) return;
+    
+    this.isRecalculating = true;
+    this.error = '';
+    
+    try {
+      console.log(`[DEBUG] Applying admin monthly interest for ${currentMonth} with rate ${adminRate}...`);
+      
+      // Call the Firebase function to apply admin monthly interest
+      const applyInterestFn = httpsCallable(this.functions, 'applyAdminMonthlyInterestAndRecalculate');
+      const result = await applyInterestFn({ 
+        monthKey: currentMonth,
+        rate: adminRate
+      });
+      
+      console.log('[DEBUG] Apply admin monthly interest result:', result.data);
+      
+      this.error = `Successfully applied admin monthly interest for ${currentMonth} at ${(adminRate * 100).toFixed(2)}%! Refreshing reports...`;
+      
+      // Refresh the reports after applying interest
+      this.refreshReports();
+      
+    } catch (error) {
+      console.error('[DEBUG] Error applying admin monthly interest:', error);
+      this.error = 'Error applying admin monthly interest: ' + error.message;
+    } finally {
+      this.isRecalculating = false;
+    }
   }
 
 
@@ -137,24 +293,28 @@ export class AdminReportComponent implements OnInit, OnDestroy {
         console.log('[DEBUG] Investors loaded:', investors);
         this.logger.debug('Investors loaded', investors);
         if (investors.length === 0) {
+          console.log('[DEBUG] No investors found');
           this.loading = false;
           return;
         }
         
         let reportsGenerated = 0;
+        let hasError = false;
+        
         investors.forEach(investor => {
           console.log(`[DEBUG] Generating report for investor: ${investor.name} (${investor.id})`);
           this.generateReport(investor.id, investor.name).then(() => {
             reportsGenerated++;
             console.log(`[DEBUG] Report generated for ${investor.name}. Total: ${reportsGenerated}/${investors.length}`);
-            if (reportsGenerated === investors.length) {
+            if (reportsGenerated === investors.length && !hasError) {
               console.log('[DEBUG] All reports generated. Setting loading to false.');
               this.loading = false;
             }
           }).catch(error => {
+            hasError = true;
             console.error(`[DEBUG] Error generating report for ${investor.name}:`, error);
             this.logger.error('Error generating report for investor', error);
-            this.error = 'Error loading investor data';
+            this.error = 'Error loading investor data: ' + error.message;
             this.loading = false;
           });
         });
@@ -162,7 +322,7 @@ export class AdminReportComponent implements OnInit, OnDestroy {
       error: (error) => {
         console.error('[DEBUG] Error loading investors:', error);
         this.logger.error('Error loading investors', error);
-        this.error = 'Error loading investors from database';
+        this.error = 'Error loading investors from database: ' + error.message;
         this.loading = false;
       }
     });
@@ -184,17 +344,27 @@ export class AdminReportComponent implements OnInit, OnDestroy {
 
   async generateReport(investorId: string, investorName: string): Promise<void> {
     try {
-      console.log(`[DEBUG] generateReport called for ${investorName} (${investorId})`);
-      const transactions = await this.investmentService.computeBalances(investorId);
-      console.log(`[DEBUG] Retrieved ${transactions.length} transactions for ${investorName}:`, transactions);
-      this.logger.logFinancialData(`Transactions for ${investorName}`, transactions);
+      console.log(`[ADMIN-REPORT] 🔥 generateReport called for ${investorName} (${investorId})`);
+      console.log(`[ADMIN-REPORT] 🔥 Available admin rates:`, Array.from(this.adminInterestRates.entries()));
+      
+      if (!investorId) {
+        throw new Error('Investor ID is required');
+      }
+      
+      // Get raw transactions without any interest calculations
+      const rawTransactions = await this.investmentService.getTransactionsByInvestor(investorId);
+      console.log(`[ADMIN-REPORT] 🔥 Retrieved ${rawTransactions.length} raw transactions for ${investorName}:`, rawTransactions);
+      
+      // Calculate interest using ONLY admin rates
+      const transactionsWithAdminInterest = this.calculateInterestUsingAdminRates(rawTransactions);
+      console.log(`[ADMIN-REPORT] 🔥 Calculated interest using admin rates:`, transactionsWithAdminInterest);
       
       let principal = 0;
       let totalInterest = 0;
       const monthlyInterestMap = new Map<string, { amount: number; rate: number }>();
 
-      transactions.forEach(t => {
-        this.logger.debug('Processing transaction', { type: t.type, amount: t.amount, date: t.date });
+      transactionsWithAdminInterest.forEach(t => {
+        console.log(`[ADMIN-REPORT] 🔥 Processing transaction: ${t.type} - ${t.amount} - ${t.date}`);
         if (t.type === 'invest' || t.type === 'deposit') {
           principal += t.amount;
         } else if (t.type === 'interest') {
@@ -203,15 +373,20 @@ export class AdminReportComponent implements OnInit, OnDestroy {
           // Extract month-year from transaction date
           const monthKey = this.getMonthKey(t.date);
           
-          // Add to monthly breakdown with rate information
+          // Add to monthly breakdown with ADMIN rate information
           const existingData = monthlyInterestMap.get(monthKey) || { amount: 0, rate: 0 };
-          const rate = this.interestRates.get(monthKey) || 0;
+          const adminRate = this.adminInterestRates.get(monthKey) || 0;
+          
+          console.log(`[ADMIN-REPORT] 🔥 Processing interest transaction for ${monthKey}:`);
+          console.log(`[ADMIN-REPORT] 🔥 Interest amount: ${t.amount}`);
+          console.log(`[ADMIN-REPORT] 🔥 Admin rate for ${monthKey}: ${adminRate} (${(adminRate * 100).toFixed(2)}%)`);
+          
           monthlyInterestMap.set(monthKey, { 
             amount: existingData.amount + t.amount, 
-            rate: rate 
+            rate: adminRate // Use ADMIN rate, not user rate
           });
           
-          this.logger.debug('Interest transaction found', { amount: t.amount, month: monthKey });
+          this.logger.debug('Interest transaction found', { amount: t.amount, month: monthKey, adminRate });
         }
       });
 
@@ -225,17 +400,17 @@ export class AdminReportComponent implements OnInit, OnDestroy {
         ? monthlyInterestBreakdown.reduce((sum, monthly) => sum + monthly.rate, 0) / monthlyInterestBreakdown.length
         : 0;
 
-      console.log(`[DEBUG] Monthly interest breakdown for ${investorName}:`, monthlyInterestBreakdown);
-      console.log(`[DEBUG] Average return percentage for ${investorName}:`, averageReturnPercentage);
-      console.log(`[DEBUG] Available interest rates:`, Array.from(this.interestRates.entries()));
+      console.log(`[ADMIN-REPORT] 🔥 Monthly interest breakdown for ${investorName}:`, monthlyInterestBreakdown);
+      console.log(`[ADMIN-REPORT] 🔥 Average return percentage for ${investorName}:`, averageReturnPercentage);
+      console.log(`[ADMIN-REPORT] 🔥 Available admin interest rates:`, Array.from(this.adminInterestRates.entries()));
 
-      const grownCapital = transactions.length > 0 ? transactions[transactions.length - 1].balance : 0;
+      const grownCapital = transactionsWithAdminInterest.length > 0 ? transactionsWithAdminInterest[transactionsWithAdminInterest.length - 1].balance : 0;
 
-      console.log(`[DEBUG] Report data for ${investorName}:`, {
+      console.log(`[ADMIN-REPORT] 🔥 Report data for ${investorName}:`, {
         principal,
         totalInterest,
         grownCapital,
-        transactionCount: transactions.length,
+        transactionCount: transactionsWithAdminInterest.length,
         monthlyInterestBreakdown: monthlyInterestBreakdown.length
       });
 
@@ -243,7 +418,7 @@ export class AdminReportComponent implements OnInit, OnDestroy {
       const existingReportIndex = this.reports.findIndex(r => r.investorName === investorName);
       const newReport = {
         investorName: investorName,
-        transactions: transactions,
+        transactions: transactionsWithAdminInterest,
         principal: principal,
         totalInterest: totalInterest,
         grownCapital: grownCapital,
@@ -254,18 +429,78 @@ export class AdminReportComponent implements OnInit, OnDestroy {
       if (existingReportIndex >= 0) {
         // Replace existing report
         this.reports[existingReportIndex] = newReport;
-        console.log(`[DEBUG] Updated existing report for ${investorName}. Total reports: ${this.reports.length}`);
+        console.log(`[ADMIN-REPORT] 🔥 Updated existing report for ${investorName}. Total reports: ${this.reports.length}`);
         this.logger.debug('Updated existing report', { investorName });
       } else {
         // Add new report
         this.reports.push(newReport);
-        console.log(`[DEBUG] Added new report for ${investorName}. Total reports: ${this.reports.length}`);
+        console.log(`[ADMIN-REPORT] 🔥 Added new report for ${investorName}. Total reports: ${this.reports.length}`);
         this.logger.debug('Added new report', { investorName });
       }
     } catch (error) {
       this.logger.error('Error in generateReport', error);
       throw error;
     }
+  }
+
+  // Method to calculate interest using ONLY admin rates
+  private calculateInterestUsingAdminRates(rawTransactions: any[]): any[] {
+    console.log(`[ADMIN-REPORT] 🔥 Calculating interest using admin rates for ${rawTransactions.length} transactions`);
+    
+    const transactions = [...rawTransactions]; // Create a copy
+    let currentBalance = 0;
+    
+    // First pass: calculate balances for non-interest transactions
+    transactions.forEach(t => {
+      if (t.type === 'invest' || t.type === 'deposit') {
+        currentBalance += t.amount;
+        t.balance = currentBalance;
+      } else if (t.type === 'withdraw') {
+        currentBalance -= t.amount;
+        t.balance = currentBalance;
+      }
+    });
+    
+    // Second pass: calculate interest using admin rates
+    const transactionsWithInterest = [];
+    let runningBalance = 0;
+    
+    for (let i = 0; i < transactions.length; i++) {
+      const t = transactions[i];
+      
+      if (t.type === 'invest' || t.type === 'deposit') {
+        runningBalance += t.amount;
+        transactionsWithInterest.push({ ...t, balance: runningBalance });
+      } else if (t.type === 'withdraw') {
+        runningBalance -= t.amount;
+        transactionsWithInterest.push({ ...t, balance: runningBalance });
+      } else if (t.type === 'interest') {
+        // Calculate interest using admin rates
+        const monthKey = this.getMonthKey(t.date);
+        const adminRate = this.adminInterestRates.get(monthKey) || 0;
+        
+        console.log(`[ADMIN-REPORT] 🔥 Calculating interest for ${monthKey}:`);
+        console.log(`[ADMIN-REPORT] 🔥 Running balance: ${runningBalance}`);
+        console.log(`[ADMIN-REPORT] 🔥 Admin rate: ${adminRate} (${(adminRate * 100).toFixed(2)}%)`);
+        
+        const interestAmount = runningBalance * adminRate;
+        runningBalance += interestAmount;
+        
+        console.log(`[ADMIN-REPORT] 🔥 Calculated interest: ${interestAmount}`);
+        console.log(`[ADMIN-REPORT] 🔥 New balance: ${runningBalance}`);
+        
+        transactionsWithInterest.push({ 
+          ...t, 
+          amount: interestAmount, 
+          balance: runningBalance 
+        });
+      } else {
+        transactionsWithInterest.push(t);
+      }
+    }
+    
+    console.log(`[ADMIN-REPORT] 🔥 Final transactions with admin interest:`, transactionsWithInterest);
+    return transactionsWithInterest;
   }
 
   private getMonthKey(date: Date | string): string {
@@ -323,20 +558,24 @@ export class AdminReportComponent implements OnInit, OnDestroy {
         return 'N/A';
       }
       
-      const rate = this.interestRates.get(monthKey);
+      const rate = this.adminInterestRates.get(monthKey);
       
       if (rate !== undefined) {
         // Convert decimal rate to percentage (e.g., 0.15 -> 15%)
         const percentage = (rate * 100).toFixed(1);
+        console.log(`[ADMIN-REPORT] ✅ Found admin rate for ${monthKey}: ${percentage}%`);
         return `${percentage}%`;
       } else {
-        this.logger.warn('No interest rate found for month', { monthKey });
-        return 'N/A';
+        // No rate set for this month - show blank
+        console.log(`[ADMIN-REPORT] ❌ No admin rate set for ${monthKey} - showing blank`);
+        return ''; // Show blank for months without rates
       }
     } catch (error) {
       this.logger.error('Error getting interest rate for date', { dateString, error });
       return 'N/A';
     }
   }
+
+
 
 }

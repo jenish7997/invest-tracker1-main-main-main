@@ -52,10 +52,6 @@ export class InterestComponent implements OnInit {
     });
   }
 
-  // Public method to manually refresh rates
-  public refreshRates() {
-    this.loadRates();
-  }
 
   async applyInterest() {
     if (this.rateForm.invalid) return;

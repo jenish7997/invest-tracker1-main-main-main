@@ -53,6 +53,10 @@ export class AdminInterestComponent implements OnInit {
     // Convert percentage to decimal (e.g., 12 -> 0.12)
     const decimalRate = rate / 100;
 
+    console.log(`[ADMIN-INTEREST] 🔥 APPLYING ADMIN RATE: ${monthKey} = ${rate}% (${decimalRate} decimal)`);
+    console.log(`[ADMIN-INTEREST] 🔥 Calling Firebase function: applyAdminMonthlyInterestAndRecalculate`);
+    console.log(`[ADMIN-INTEREST] 🔥 This should ONLY write to adminRates collection, NOT rates collection!`);
+
     const applyInterestFn = httpsCallable(this.functions, 'applyAdminMonthlyInterestAndRecalculate');
 
     try {

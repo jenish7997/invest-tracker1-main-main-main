@@ -10,7 +10,6 @@ import { WithdrawComponent } from './components/withdraw/withdraw.component';
 import { InterestComponent } from './components/interest/interest.component';
 import { AddInvestorComponent } from './components/add-investor/add-investor.component';
 import { ReportComponent } from './components/report/report.component';
-import { AdvancedTestingComponent } from './components/testing/advanced-testing.component';
 import { UserGuard } from './guards/user.guard';
 import { AdminInterestComponent } from './components/admin-interest/admin-interest.component';
 import { AdminReportComponent } from './components/admin-report/admin-report.component';
@@ -27,6 +26,5 @@ export const routes: Routes = [
   { path: 'report', component: ReportComponent, canActivate: [UserGuard] },
   { path: 'admin-interest', component: AdminInterestComponent, canActivate: [AuthGuard] },
   { path: 'admin-report', component: AdminReportComponent, canActivate: [AuthGuard] },
-  { path: 'advanced-testing', component: AdvancedTestingComponent, canActivate: [AuthGuard] },
   { path: '', redirectTo: '/login', pathMatch: 'full' }
 ];

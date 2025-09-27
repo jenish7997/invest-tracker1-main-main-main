@@ -11,6 +11,7 @@ export class UserInterestService {
 
   // User interest rates - uses original rates collection
   listUserRates(): Observable<MonthlyRate[]> {
+    console.log('[USER-INTEREST-SERVICE] 📋 Fetching USER rates from RATES collection');
     const ratesCollection = collection(this.firestore, 'rates');
     return collectionData(ratesCollection, { idField: 'id' }) as Observable<MonthlyRate[]>;
   }

@@ -34,5 +34,13 @@ service cloud.firestore {
       // Only admins can write rates
       allow write: if isAdmin();
     }
+
+    // ADMIN RATES Collection
+    match /adminRates/{rateId} {
+      // Anyone authenticated can read admin rates (needed for reports)
+      allow read: if request.auth != null;
+      // Only admins can write admin rates
+      allow write: if isAdmin();
+    }
   }
 }
