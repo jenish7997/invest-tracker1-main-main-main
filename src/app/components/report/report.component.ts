@@ -189,8 +189,17 @@ export class ReportComponent implements OnInit, OnDestroy {
   async generateReport(investorId: string, investorName: string): Promise<void> {
     try {
       console.log(`[DEBUG] generateReport called for ${investorName} (${investorId})`);
-      const transactions = await this.investmentService.computeBalances(investorId);
-      console.log(`[DEBUG] Retrieved ${transactions.length} transactions for ${investorName}:`, transactions);
+      const rawTransactions = await this.investmentService.computeBalances(investorId);
+      console.log(`[DEBUG] Retrieved ${rawTransactions.length} raw transactions for ${investorName}:`, rawTransactions);
+      
+      // Filter out existing interest transactions to prevent duplicates
+      const nonInterestTransactions = rawTransactions.filter(t => t.type !== 'interest');
+      console.log(`[DEBUG] Filtered to ${nonInterestTransactions.length} non-interest transactions`);
+      
+      // Recalculate interest using user rates to ensure accuracy
+      const transactions = this.calculateInterestUsingUserRates(nonInterestTransactions);
+      console.log(`[DEBUG] Calculated interest using user rates:`, transactions);
+      
       this.logger.logFinancialData(`Transactions for ${investorName}`, transactions);
       
       let principal = 0;
@@ -348,6 +357,94 @@ export class ReportComponent implements OnInit, OnDestroy {
     this.showAdvancedTesting = !this.showAdvancedTesting;
     console.log('showAdvancedTesting is now:', this.showAdvancedTesting);
     this.logger.debug('Advanced testing toggled', { showAdvancedTesting: this.showAdvancedTesting });
+  }
+
+  // Calculate interest using user rates to prevent duplicates
+  private calculateInterestUsingUserRates(rawTransactions: any[]): any[] {
+    console.log(`[USER-REPORT] 🔥 Calculating interest using user rates for ${rawTransactions.length} transactions`);
+    
+    // Filter out existing interest transactions to avoid duplicates
+    const nonInterestTransactions = rawTransactions.filter(t => t.type !== 'interest');
+    console.log(`[USER-REPORT] 🔥 Filtered to ${nonInterestTransactions.length} non-interest transactions`);
+    
+    if (nonInterestTransactions.length === 0) {
+      console.log(`[USER-REPORT] 🔥 No non-interest transactions found, returning empty array`);
+      return [];
+    }
+    
+    const transactions = [...nonInterestTransactions]; // Create a copy
+    const transactionsWithInterest = [];
+    
+    // Process transactions chronologically and add interest at month end
+    let runningBalance = 0; // Track running balance including interest
+    const allTransactions = [...transactions]; // Start with non-interest transactions
+    const userRateMonths = Array.from(this.interestRates.keys()).sort();
+    
+    // Sort all transactions by date
+    allTransactions.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    
+    // Process each month
+    for (const monthKey of userRateMonths) {
+      const userRate = this.interestRates.get(monthKey) || 0;
+      
+      if (userRate <= 0) {
+        continue; // Skip months with no interest rate
+      }
+      
+      // Parse month key (format: YYYY-MM)
+      const [year, month] = monthKey.split('-').map(Number);
+      const monthStartDate = new Date(year, month - 1, 1); // month is 0-indexed
+      const monthEndDate = new Date(year, month, 0); // Last day of the month
+      
+      // Process all transactions in this month
+      for (const t of allTransactions) {
+        const transactionDate = new Date(t.date);
+        
+        if (transactionDate >= monthStartDate && transactionDate <= monthEndDate) {
+          if (t.type === 'invest' || t.type === 'deposit') {
+            runningBalance += t.amount;
+            transactionsWithInterest.push({ ...t, balance: runningBalance });
+          } else if (t.type === 'withdraw') {
+            runningBalance -= t.amount;
+            transactionsWithInterest.push({ ...t, balance: runningBalance });
+          }
+        }
+      }
+      
+      // Add interest at the end of the month if there's a positive balance
+      if (runningBalance > 0) {
+        const interestAmount = runningBalance * userRate;
+        runningBalance += interestAmount; // Add interest to running balance
+        
+        console.log(`[USER-REPORT] 🔥 Adding compound interest for ${monthKey}:`);
+        console.log(`[USER-REPORT] 🔥 Balance before interest: ${runningBalance - interestAmount}`);
+        console.log(`[USER-REPORT] 🔥 User rate: ${userRate} (${(userRate * 100).toFixed(2)}%)`);
+        console.log(`[USER-REPORT] 🔥 Calculated interest: ${interestAmount}`);
+        console.log(`[USER-REPORT] 🔥 Balance after interest: ${runningBalance}`);
+        
+        // Create interest transaction for the last day of the month
+        const interestTransaction = {
+          id: `user_interest_${monthKey}`,
+          investorId: transactions[0]?.investorId || '',
+          investorName: transactions[0]?.investorName || '',
+          date: monthEndDate,
+          type: 'interest',
+          amount: interestAmount,
+          balance: runningBalance, // Balance after adding interest
+          description: `Interest (${(userRate * 100).toFixed(1)}%)`
+        };
+        
+        transactionsWithInterest.push(interestTransaction);
+      } else {
+        console.log(`[USER-REPORT] 🔥 No interest for ${monthKey} - balance was ${runningBalance}`);
+      }
+    }
+    
+    // Sort all transactions by date
+    transactionsWithInterest.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    
+    console.log(`[USER-REPORT] 🔥 Final transactions with user interest:`, transactionsWithInterest);
+    return transactionsWithInterest;
   }
 
   // Format date to display as "01 Jan 2024"

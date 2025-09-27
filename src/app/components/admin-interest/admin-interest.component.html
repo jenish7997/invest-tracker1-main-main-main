@@ -55,6 +55,32 @@
     </div>
   </div>
 
+  <!-- Action Buttons -->
+  <div class="action-buttons-card">
+    <h2 class="action-title">
+      <span class="material-icons">settings</span>
+      Admin Actions
+    </h2>
+    <div class="action-buttons">
+      <button 
+        class="clear-btn" 
+        (click)="clearAllAdminRates()" 
+        [disabled]="loading || rates.length === 0"
+        title="Delete all admin interest rates">
+        <span class="material-icons">delete_forever</span>
+        Clear All Rates
+      </button>
+      <button 
+        class="sample-btn" 
+        (click)="addSampleAdminRates()" 
+        [disabled]="loading"
+        title="Add sample admin interest rates for testing">
+        <span class="material-icons">add_box</span>
+        Add Sample Data
+      </button>
+    </div>
+  </div>
+
   <!-- Historical Rates Table -->
   <div class="table-card">
     <h2 class="table-title">

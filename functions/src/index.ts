@@ -334,7 +334,6 @@ export const recalculateInterestForInvestor = onCall({
     });
 
     // Calculate new interest for each month
-    let totalInterestApplied = 0;
     let processedMonths = 0;
 
     // Get all months that have rates
@@ -342,8 +341,9 @@ export const recalculateInterestForInvestor = onCall({
     console.log(`[DEBUG] Available rates:`, availableRates);
     console.log(`[DEBUG] Months with rates:`, monthsWithRates);
     
-    // Process each month that has rates (for compounding interest, we need to process all months with rates)
-    let runningBalance = 0; // This will track the compounding balance
+    // Process each month that has rates (for compound interest, we calculate on principal + previous interest)
+    let totalInterestApplied = 0; // Track total interest for balance update
+    let compoundBalance = 0; // Track compound balance including previous interest
     
     for (const monthKey of monthsWithRates) {
       console.log(`[DEBUG] Processing month: ${monthKey}`);
@@ -367,13 +367,13 @@ export const recalculateInterestForInvestor = onCall({
         }
       }
       
-      // Add all interest from previous months (compounding)
-      balanceAtMonthEnd += runningBalance;
+      // For compound interest, add previous interest to the balance
+      const totalBalanceForInterest = balanceAtMonthEnd + compoundBalance;
 
-      console.log(`[DEBUG] Month ${monthKey}: balanceAtMonthEnd = ${balanceAtMonthEnd}, rate = ${rate}`);
+      console.log(`[DEBUG] Month ${monthKey}: principalAtMonthEnd = ${balanceAtMonthEnd}, compoundBalance = ${compoundBalance}, totalBalanceForInterest = ${totalBalanceForInterest}, rate = ${rate}`);
       
-      if (balanceAtMonthEnd > 0) {
-        const interestAmount = balanceAtMonthEnd * rate;
+      if (totalBalanceForInterest > 0) {
+        const interestAmount = totalBalanceForInterest * rate;
         console.log(`[DEBUG] Month ${monthKey}: interestAmount = ${interestAmount}`);
         
         // Create new interest transaction
@@ -387,14 +387,15 @@ export const recalculateInterestForInvestor = onCall({
           createdAt: admin.firestore.Timestamp.now()
         });
 
-        // Update running balance for next month (compounding)
-        runningBalance += interestAmount;
-        console.log(`[DEBUG] Month ${monthKey}: runningBalance = ${runningBalance}`);
+        // Update compound balance for next month
+        compoundBalance += interestAmount;
         
+        // Track total interest applied
         totalInterestApplied += interestAmount;
+        console.log(`[DEBUG] Month ${monthKey}: interestAmount = ${interestAmount}, compoundBalance = ${compoundBalance}, totalInterestApplied = ${totalInterestApplied}`);
         processedMonths++;
       } else {
-        console.log(`[DEBUG] Month ${monthKey}: No interest calculated (balanceAtMonthEnd = ${balanceAtMonthEnd})`);
+        console.log(`[DEBUG] Month ${monthKey}: No interest calculated (totalBalanceForInterest = ${totalBalanceForInterest})`);
       }
     }
 
@@ -590,11 +591,12 @@ export const updateInterestRate = onCall({
       let principalAmount = 0;
       principalQuery.docs.forEach(doc => {
         const t = doc.data();
-        if (t.type === 'invest' || t.type === 'deposit' || t.type === 'interest') {
+        if (t.type === 'invest' || t.type === 'deposit') {
           principalAmount += t.amount;
         } else if (t.type === 'withdraw') {
           principalAmount -= t.amount;
         }
+        // Don't include interest in principal calculation for simple interest
       });
 
       // Also need to add any transactions that happened on the first day of the month
@@ -611,11 +613,12 @@ export const updateInterestRate = onCall({
       
       firstDayTransactionsQuery.docs.forEach(doc => {
         const t = doc.data();
-        if (t.type === 'invest' || t.type === 'deposit' || t.type === 'interest') {
+        if (t.type === 'invest' || t.type === 'deposit') {
           principalAmount += t.amount;
         } else if (t.type === 'withdraw') {
           principalAmount -= t.amount;
         }
+        // Don't include interest in principal calculation for simple interest
       });
 
       if (principalAmount > 0) {
@@ -731,24 +734,23 @@ export const applyMonthlyInterestAndRecalculate = onCall({
       
       transactionsQuery.docs.forEach(transactionDoc => {
         const transaction = transactionDoc.data();
-        if (transaction.type === 'invest' || transaction.type === 'deposit' || transaction.type === 'interest') {
+        if (transaction.type === 'invest' || transaction.type === 'deposit') {
           balanceAtMonthEnd += transaction.amount;
-          
-          // Check if this is an existing interest transaction for the same month
-          if (transaction.type === 'interest') {
-            const transactionDate = transaction.date.toDate();
-            if (transactionDate.getFullYear() === year && transactionDate.getMonth() === month) {
-              existingInterestForThisMonth += transaction.amount;
-            }
-          }
         } else if (transaction.type === 'withdraw') {
           balanceAtMonthEnd -= transaction.amount;
+        } else if (transaction.type === 'interest') {
+          // Check if this is an existing interest transaction for the same month
+          const transactionDate = transaction.date.toDate();
+          if (transactionDate.getFullYear() === year && transactionDate.getMonth() === month) {
+            existingInterestForThisMonth += transaction.amount;
+          }
+          // Don't include interest in balance calculation for simple interest
         }
       });
 
       // Only apply interest if there's a positive balance and no existing interest for this month
       if (balanceAtMonthEnd > 0 && existingInterestForThisMonth === 0) {
-        // Calculate compound interest on the balance at month end
+        // Calculate simple interest on the balance at month end
         const interestAmount = balanceAtMonthEnd * rate;
         
         // Create an interest transaction
@@ -841,24 +843,23 @@ export const applyAdminMonthlyInterestAndRecalculate = onCall({
       
       transactionsQuery.docs.forEach(transactionDoc => {
         const transaction = transactionDoc.data();
-        if (transaction.type === 'invest' || transaction.type === 'deposit' || transaction.type === 'interest') {
+        if (transaction.type === 'invest' || transaction.type === 'deposit') {
           balanceAtMonthEnd += transaction.amount;
-          
-          // Check if this is an existing interest transaction for the same month
-          if (transaction.type === 'interest') {
-            const transactionDate = transaction.date.toDate();
-            if (transactionDate.getFullYear() === year && transactionDate.getMonth() === month) {
-              existingInterestForThisMonth += transaction.amount;
-            }
-          }
         } else if (transaction.type === 'withdraw') {
           balanceAtMonthEnd -= transaction.amount;
+        } else if (transaction.type === 'interest') {
+          // Check if this is an existing interest transaction for the same month
+          const transactionDate = transaction.date.toDate();
+          if (transactionDate.getFullYear() === year && transactionDate.getMonth() === month) {
+            existingInterestForThisMonth += transaction.amount;
+          }
+          // Don't include interest in balance calculation for simple interest
         }
       });
 
       // Only apply interest if there's a positive balance and no existing interest for this month
       if (balanceAtMonthEnd > 0 && existingInterestForThisMonth === 0) {
-        // Calculate compound interest on the balance at month end
+        // Calculate simple interest on the balance at month end
         const interestAmount = balanceAtMonthEnd * rate;
         
         // Create an interest transaction
@@ -983,11 +984,12 @@ export const updateAdminInterestRate = onCall({
       let principalAmount = 0;
       principalQuery.docs.forEach(doc => {
         const t = doc.data();
-        if (t.type === 'invest' || t.type === 'deposit' || t.type === 'interest') {
+        if (t.type === 'invest' || t.type === 'deposit') {
           principalAmount += t.amount;
         } else if (t.type === 'withdraw') {
           principalAmount -= t.amount;
         }
+        // Don't include interest in principal calculation for simple interest
       });
 
       // Also need to add any transactions that happened on the first day of the month
@@ -1003,11 +1005,12 @@ export const updateAdminInterestRate = onCall({
       
       firstDayTransactionsQuery.docs.forEach(doc => {
         const t = doc.data();
-        if (t.type === 'invest' || t.type === 'deposit' || t.type === 'interest') {
+        if (t.type === 'invest' || t.type === 'deposit') {
           principalAmount += t.amount;
         } else if (t.type === 'withdraw') {
           principalAmount -= t.amount;
         }
+        // Don't include interest in principal calculation for simple interest
       });
 
       if (principalAmount > 0) {
