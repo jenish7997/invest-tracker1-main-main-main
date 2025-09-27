@@ -17,7 +17,6 @@ export class AdminComponent implements OnInit {
   investors: Investor[] = [];
   transactions: Transaction[] = [];
   isDeleting = false;
-  isRecalculating = false;
   isInitializingRates = false;
 
   constructor(
@@ -38,34 +37,6 @@ export class AdminComponent implements OnInit {
     });
   }
 
-  async recalculateInterestForInvestor(investorId: string, investorName: string): Promise<void> {
-    if (this.isRecalculating) return;
-    
-    const confirmed = confirm(
-      `Recalculate interest for ${investorName}?\n\n` +
-      `This will:\n` +
-      `• Remove all existing interest transactions\n` +
-      `• Recalculate interest based on current investments and rates\n` +
-      `• Update the investor's balance\n\n` +
-      `This ensures accurate interest calculation after new investments.`
-    );
-    
-    if (!confirmed) return;
-    
-    this.isRecalculating = true;
-    
-    try {
-      const success = await this.adminService.recalculateInterestForInvestor(investorId);
-      if (success) {
-        // Refresh the investors list after recalculation
-        this.loadInvestors();
-      }
-    } catch (error) {
-      console.error('Error recalculating interest:', error);
-    } finally {
-      this.isRecalculating = false;
-    }
-  }
 
   async deleteInvestor(investorId: string, investorName: string): Promise<void> {
     if (this.isDeleting) return;

@@ -102,7 +102,7 @@
           </thead>
           <tbody>
             <tr *ngFor="let t of report.transactions">
-              <td>{{ t.date }}</td>
+              <td>{{ formatDate(t.date) }}</td>
               <td class="transaction-type">{{ t.type }}</td>
               <td class="amount principal-amount">
                 <span *ngIf="t.type === 'invest' || t.type === 'deposit'">

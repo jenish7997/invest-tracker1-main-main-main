@@ -7,6 +7,7 @@ import { AdminInterestService } from '../../services/admin-interest.service';
 import { AuthService } from '../../services/auth.service';
 import { LoggerService } from '../../services/logger.service';
 import { Functions, httpsCallable } from '@angular/fire/functions';
+import { take } from 'rxjs/operators';
 
 interface TestScenario {
   name: string;
@@ -964,5 +965,342 @@ export class AdvancedReportTestingComponent implements OnInit {
     if (this.testResults.length === 0) return 0;
     const passed = this.getPassedTestsCount();
     return Math.round((passed / this.testResults.length) * 100);
+  }
+
+  // Method to verify current user's report calculations
+  async verifyCurrentUserCalculations(): Promise<void> {
+    if (!this.currentUser) {
+      this.addTestResult('Current User Verification', 'FAIL', 'No user logged in');
+      return;
+    }
+
+    try {
+      console.log('[ADVANCED-TESTING] 🔍 Verifying current user calculations...');
+      
+      // Get current user's transactions
+      const transactions = await this.investmentService.getTransactionsByInvestor(this.currentUser.uid);
+      console.log(`[ADVANCED-TESTING] Found ${transactions.length} transactions for current user`);
+      
+      if (transactions.length === 0) {
+        this.addTestResult('Current User Verification', 'FAIL', 'No transactions found for current user');
+        return;
+      }
+
+      // Get current user's interest rates
+      const userRates = await this.userInterestService.listUserRates().pipe(take(1)).toPromise();
+      const ratesMap = new Map<string, number>();
+      userRates?.forEach(rate => {
+        ratesMap.set(rate.monthKey, rate.rate);
+      });
+
+      // Calculate expected results manually
+      const expectedResults = this.calculateExpectedResultsForUser(transactions, ratesMap);
+      
+      // Get actual report data
+      const actualResults = await this.generateCurrentUserReport(this.currentUser.uid);
+      
+      // Verify calculations
+      const verification = this.verifyUserCalculations(expectedResults, actualResults);
+      
+      this.addTestResult('Current User Verification', verification.status, verification.message, undefined, verification.details);
+      
+    } catch (error) {
+      console.error('[ADVANCED-TESTING] Error verifying current user calculations:', error);
+      this.addTestResult('Current User Verification', 'FAIL', `Verification failed: ${error}`);
+    }
+  }
+
+  // Calculate expected results for current user
+  private calculateExpectedResultsForUser(transactions: any[], ratesMap: Map<string, number>): any {
+    let balance = 0;
+    let totalInvested = 0;
+    let totalWithdrawn = 0;
+    let totalInterest = 0;
+    const monthlyBreakdown: any[] = [];
+
+    // Group transactions by month
+    const monthlyTransactions = new Map<string, any[]>();
+    
+    transactions.forEach(transaction => {
+      const monthKey = this.getMonthKey(transaction.date);
+      if (!monthlyTransactions.has(monthKey)) {
+        monthlyTransactions.set(monthKey, []);
+      }
+      monthlyTransactions.get(monthKey)!.push(transaction);
+    });
+
+    // Process each month
+    monthlyTransactions.forEach((monthTransactions, monthKey) => {
+      let monthBalance = balance;
+      let monthInvested = 0;
+      let monthWithdrawn = 0;
+      
+      // Process transactions for this month
+      monthTransactions.forEach(transaction => {
+        if (transaction.type === 'invest' || transaction.type === 'deposit') {
+          monthBalance += transaction.amount;
+          monthInvested += transaction.amount;
+        } else if (transaction.type === 'withdraw') {
+          monthBalance -= transaction.amount;
+          monthWithdrawn += transaction.amount;
+        }
+      });
+
+      // Calculate interest for this month
+      const rate = ratesMap.get(monthKey) || 0;
+      const interest = monthBalance * rate;
+      monthBalance += interest;
+
+      // Update totals
+      balance = monthBalance;
+      totalInvested += monthInvested;
+      totalWithdrawn += monthWithdrawn;
+      totalInterest += interest;
+
+      monthlyBreakdown.push({
+        month: monthKey,
+        rate: rate,
+        interest: interest,
+        balance: monthBalance
+      });
+    });
+
+    return {
+      finalBalance: balance,
+      totalInvested: totalInvested,
+      totalWithdrawn: totalWithdrawn,
+      totalInterest: totalInterest,
+      monthlyBreakdown: monthlyBreakdown
+    };
+  }
+
+  // Generate current user report using the same logic as the report component
+  private async generateCurrentUserReport(userId: string): Promise<any> {
+    try {
+      // Get user's transactions
+      const transactions = await this.investmentService.getTransactionsByInvestor(userId);
+      
+      // Get user's interest rates
+      const userRates = await this.userInterestService.listUserRates().pipe(take(1)).toPromise();
+      const ratesMap = new Map<string, number>();
+      userRates?.forEach(rate => {
+        ratesMap.set(rate.monthKey, rate.rate);
+      });
+
+      // Calculate report data using the same logic as report component
+      let principal = 0;
+      let totalInterest = 0;
+      let balance = 0;
+      const monthlyInterestMap = new Map<string, { amount: number; rate: number }>();
+
+      transactions.forEach(t => {
+        if (t.type === 'invest' || t.type === 'deposit') {
+          principal += t.amount;
+          balance += t.amount;
+        } else if (t.type === 'withdraw') {
+          balance -= t.amount;
+        } else if (t.type === 'interest') {
+          totalInterest += t.amount;
+          balance += t.amount;
+          
+          const monthKey = this.getMonthKey(t.date);
+          const existingData = monthlyInterestMap.get(monthKey) || { amount: 0, rate: 0 };
+          const rate = ratesMap.get(monthKey) || 0;
+          
+          monthlyInterestMap.set(monthKey, { 
+            amount: existingData.amount + t.amount, 
+            rate: rate
+          });
+        }
+      });
+
+      return {
+        finalBalance: balance,
+        totalInvested: principal,
+        totalWithdrawn: principal - balance + totalInterest,
+        totalInterest: totalInterest,
+        monthlyBreakdown: Array.from(monthlyInterestMap.entries()).map(([month, data]) => ({
+          month: month,
+          rate: data.rate,
+          interest: data.amount,
+          balance: balance
+        }))
+      };
+    } catch (error) {
+      console.error('[ADVANCED-TESTING] Error generating current user report:', error);
+      throw error;
+    }
+  }
+
+  // Verify user calculations
+  private verifyUserCalculations(expected: any, actual: any): { status: 'PASS' | 'FAIL', message: string, details?: any } {
+    const tolerance = 0.01; // 1% tolerance
+    
+    const compareValues = (actual: number, expected: number, tolerance: number): boolean => {
+      if (expected === 0) {
+        return Math.abs(actual) < 0.01;
+      }
+      return Math.abs(actual - expected) / expected < tolerance;
+    };
+    
+    const balanceMatch = compareValues(actual.finalBalance, expected.finalBalance, tolerance);
+    const investedMatch = compareValues(actual.totalInvested, expected.totalInvested, tolerance);
+    const withdrawnMatch = compareValues(actual.totalWithdrawn, expected.totalWithdrawn, tolerance);
+    const interestMatch = compareValues(actual.totalInterest, expected.totalInterest, tolerance);
+    
+    if (balanceMatch && investedMatch && withdrawnMatch && interestMatch) {
+      return {
+        status: 'PASS',
+        message: `✅ All calculations verified! Final balance: ₹${actual.finalBalance.toLocaleString()}`,
+        details: {
+          expected: expected,
+          actual: actual,
+          tolerance: tolerance,
+          balanceMatch,
+          investedMatch,
+          withdrawnMatch,
+          interestMatch
+        }
+      };
+    } else {
+      return {
+        status: 'FAIL',
+        message: `❌ Calculation mismatch detected! Expected balance: ₹${expected.finalBalance.toLocaleString()}, Actual: ₹${actual.finalBalance.toLocaleString()}`,
+        details: {
+          expected: expected,
+          actual: actual,
+          tolerance: tolerance,
+          balanceMatch,
+          investedMatch,
+          withdrawnMatch,
+          interestMatch
+        }
+      };
+    }
+  }
+
+  // Helper method to get month key from date
+  private getMonthKey(date: Date | string): string {
+    try {
+      const dateObj = typeof date === 'string' ? new Date(date) : date;
+      const year = dateObj.getFullYear();
+      const month = (dateObj.getMonth() + 1).toString().padStart(2, '0');
+      return `${year}-${month}`;
+    } catch (error) {
+      return 'invalid';
+    }
+  }
+
+  // Method to run comprehensive calculation verification
+  async runCalculationVerification(): Promise<void> {
+    this.isRunningTests = true;
+    this.testResults = [];
+    this.testProgress = 0;
+    
+    console.log('🔍 Starting Calculation Verification...');
+    
+    try {
+      // Verify current user calculations
+      this.currentTest = 'Current User Verification';
+      this.testProgress = 50;
+      await this.verifyCurrentUserCalculations();
+      
+      // Run additional verification tests
+      this.currentTest = 'Rate Consistency Check';
+      this.testProgress = 75;
+      await this.verifyRateConsistency();
+      
+      this.currentTest = 'Transaction Integrity Check';
+      this.testProgress = 100;
+      await this.verifyTransactionIntegrity();
+      
+    } catch (error) {
+      console.error('[ADVANCED-TESTING] Error in calculation verification:', error);
+      this.addTestResult('Calculation Verification', 'FAIL', `Verification failed: ${error}`);
+    } finally {
+      this.isRunningTests = false;
+      this.testProgress = 100;
+    }
+  }
+
+  // Verify rate consistency
+  private async verifyRateConsistency(): Promise<void> {
+    try {
+      const userRates = await this.userInterestService.listUserRates().pipe(take(1)).toPromise();
+      
+      if (!userRates || userRates.length === 0) {
+        this.addTestResult('Rate Consistency Check', 'FAIL', 'No user rates found');
+        return;
+      }
+
+      // Check for duplicate month keys
+      const monthKeys = userRates.map(rate => rate.monthKey);
+      const uniqueMonthKeys = new Set(monthKeys);
+      
+      if (monthKeys.length !== uniqueMonthKeys.size) {
+        this.addTestResult('Rate Consistency Check', 'FAIL', 'Duplicate month keys found in rates');
+        return;
+      }
+
+      // Check for valid rates (0-100%)
+      const invalidRates = userRates.filter(rate => rate.rate < 0 || rate.rate > 1);
+      
+      if (invalidRates.length > 0) {
+        this.addTestResult('Rate Consistency Check', 'FAIL', `Invalid rates found: ${invalidRates.length} rates outside 0-100% range`);
+        return;
+      }
+
+      this.addTestResult('Rate Consistency Check', 'PASS', `All ${userRates.length} rates are valid and consistent`);
+      
+    } catch (error) {
+      this.addTestResult('Rate Consistency Check', 'FAIL', `Rate consistency check failed: ${error}`);
+    }
+  }
+
+  // Verify transaction integrity
+  private async verifyTransactionIntegrity(): Promise<void> {
+    try {
+      if (!this.currentUser) {
+        this.addTestResult('Transaction Integrity Check', 'FAIL', 'No user logged in');
+        return;
+      }
+
+      const transactions = await this.investmentService.getTransactionsByInvestor(this.currentUser.uid);
+      
+      if (transactions.length === 0) {
+        this.addTestResult('Transaction Integrity Check', 'PASS', 'No transactions to verify');
+        return;
+      }
+
+      // Check for valid transaction types
+      const validTypes = ['invest', 'deposit', 'withdraw', 'interest'];
+      const invalidTransactions = transactions.filter(t => !validTypes.includes(t.type));
+      
+      if (invalidTransactions.length > 0) {
+        this.addTestResult('Transaction Integrity Check', 'FAIL', `Invalid transaction types found: ${invalidTransactions.length} transactions`);
+        return;
+      }
+
+      // Check for valid amounts
+      const invalidAmounts = transactions.filter(t => t.amount <= 0 || isNaN(t.amount));
+      
+      if (invalidAmounts.length > 0) {
+        this.addTestResult('Transaction Integrity Check', 'FAIL', `Invalid amounts found: ${invalidAmounts.length} transactions`);
+        return;
+      }
+
+      // Check for valid dates
+      const invalidDates = transactions.filter(t => !t.date || isNaN(new Date(t.date).getTime()));
+      
+      if (invalidDates.length > 0) {
+        this.addTestResult('Transaction Integrity Check', 'FAIL', `Invalid dates found: ${invalidDates.length} transactions`);
+        return;
+      }
+
+      this.addTestResult('Transaction Integrity Check', 'PASS', `All ${transactions.length} transactions are valid`);
+      
+    } catch (error) {
+      this.addTestResult('Transaction Integrity Check', 'FAIL', `Transaction integrity check failed: ${error}`);
+    }
   }
 }

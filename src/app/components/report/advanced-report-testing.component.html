@@ -28,6 +28,15 @@
     </button>
     
     <button 
+      class="verify-calculations-btn" 
+      (click)="runCalculationVerification()" 
+      [disabled]="isRunningTests"
+      style="background: linear-gradient(135deg, #4caf50, #2e7d32);">
+      <span class="material-icons">verified</span>
+      {{ isRunningTests ? 'Verifying Calculations...' : 'Verify My Calculations' }}
+    </button>
+    
+    <button 
       class="clear-results-btn" 
       (click)="clearResults()" 
       [disabled]="isRunningTests">

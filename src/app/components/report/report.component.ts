@@ -350,5 +350,35 @@ export class ReportComponent implements OnInit, OnDestroy {
     this.logger.debug('Advanced testing toggled', { showAdvancedTesting: this.showAdvancedTesting });
   }
 
+  // Format date to display as "01 Jan 2024"
+  formatDate(date: Date | string): string {
+    try {
+      let dateObj: Date;
+      
+      if (typeof date === 'string') {
+        dateObj = new Date(date);
+      } else {
+        dateObj = date;
+      }
+      
+      // Check if date is valid
+      if (isNaN(dateObj.getTime())) {
+        return 'Invalid Date';
+      }
+      
+      const day = dateObj.getDate().toString().padStart(2, '0');
+      const monthNames = [
+        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      ];
+      const month = monthNames[dateObj.getMonth()];
+      const year = dateObj.getFullYear();
+      
+      return `${day} ${month} ${year}`;
+    } catch (error) {
+      this.logger.error('Error formatting date', { date, error });
+      return 'Invalid Date';
+    }
+  }
 
 }
