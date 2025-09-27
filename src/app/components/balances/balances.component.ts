@@ -92,6 +92,7 @@ export class BalancesComponent implements OnInit {
         monthData.interest += transaction.amount;
       } else if (transaction.type === 'withdraw') {
         monthData.withdrawals += transaction.amount;
+        monthData.principal -= transaction.amount; // Deduct withdrawals from principal
       }
     });
 
@@ -137,6 +138,8 @@ export class BalancesComponent implements OnInit {
     transactions.forEach(transaction => {
       if (transaction.type === 'invest' || transaction.type === 'deposit') {
         principalAmount += transaction.amount;
+      } else if (transaction.type === 'withdraw') {
+        principalAmount -= transaction.amount; // Deduct withdrawals from principal
       } else if (transaction.type === 'interest') {
         totalInterest += transaction.amount;
         

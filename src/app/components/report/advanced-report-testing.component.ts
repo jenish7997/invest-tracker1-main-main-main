@@ -1098,6 +1098,7 @@ export class AdvancedReportTestingComponent implements OnInit {
           principal += t.amount;
           balance += t.amount;
         } else if (t.type === 'withdraw') {
+          principal -= t.amount; // Deduct withdrawals from principal
           balance -= t.amount;
         } else if (t.type === 'interest') {
           totalInterest += t.amount;

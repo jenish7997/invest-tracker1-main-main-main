@@ -371,6 +371,8 @@ export class AdminReportComponent implements OnInit, OnDestroy {
         console.log(`[ADMIN-REPORT] 🔥 Processing transaction: ${t.type} - ${t.amount} - ${t.date}`);
         if (t.type === 'invest' || t.type === 'deposit') {
           principal += t.amount;
+        } else if (t.type === 'withdraw') {
+          principal -= t.amount; // Deduct withdrawals from principal
         } else if (t.type === 'interest') {
           totalInterest += t.amount;
           

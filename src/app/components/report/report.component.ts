@@ -189,7 +189,8 @@ export class ReportComponent implements OnInit, OnDestroy {
   async generateReport(investorId: string, investorName: string): Promise<void> {
     try {
       console.log(`[DEBUG] generateReport called for ${investorName} (${investorId})`);
-      const rawTransactions = await this.investmentService.computeBalances(investorId);
+      // Use the same method as admin report to get raw transactions
+      const rawTransactions = await this.investmentService.getTransactionsByInvestor(investorId);
       console.log(`[DEBUG] Retrieved ${rawTransactions.length} raw transactions for ${investorName}:`, rawTransactions);
       
       // Filter out existing interest transactions to prevent duplicates
@@ -210,6 +211,8 @@ export class ReportComponent implements OnInit, OnDestroy {
         this.logger.debug('Processing transaction', { type: t.type, amount: t.amount, date: t.date });
         if (t.type === 'invest' || t.type === 'deposit') {
           principal += t.amount;
+        } else if (t.type === 'withdraw') {
+          principal -= t.amount; // Deduct withdrawals from principal
         } else if (t.type === 'interest') {
           totalInterest += t.amount;
           
