@@ -1,19 +1,11 @@
 <div class="report-container">
   <div class="report-header">
     <h1 class="report-title">Admin Investment Reports</h1>
-    <div class="header-buttons">
-      <button class="refresh-btn" (click)="recalculateAllInterest()" [disabled]="loading || isRecalculating" title="Recalculate Interest for All Investors" style="background: linear-gradient(135deg, #e91e63, #c2185b);">
-        <span class="material-icons">refresh</span>
-        {{ isRecalculating ? 'Recalculating...' : 'Recalculate Interest' }}
-      </button>
-      <button class="refresh-btn" (click)="applyAdminMonthlyInterest()" [disabled]="loading || isRecalculating" title="Apply Monthly Interest Using Admin Rates" style="background: linear-gradient(135deg, #4caf50, #2e7d32);">
-        <span class="material-icons">trending_up</span>
-        Apply Monthly Interest
-      </button>
-      <button class="refresh-btn" (click)="runAdminCalculationVerification()" [disabled]="loading || isRecalculating" title="Verify Admin Report Calculations" style="background: linear-gradient(135deg, #ff9800, #f57c00);">
-        <span class="material-icons">verified</span>
-        {{ isRecalculating ? 'Verifying...' : 'Advanced Testing' }}
-      </button>
+    <div class="header-info">
+      <p class="auto-update-info">
+        <span class="material-icons">sync</span>
+        Reports update automatically when rates or transactions change
+      </p>
     </div>
   </div>
 
@@ -53,130 +45,6 @@
     </ul>
   </div>
 
-  <!-- Verification Results -->
-  <div *ngIf="showVerificationResults && verificationResults" class="verification-results">
-    <div class="verification-header">
-      <h2>🧪 Admin Calculation Verification Results</h2>
-      <button class="close-btn" (click)="closeVerificationResults()" title="Close Results">
-        <span class="material-icons">close</span>
-      </button>
-    </div>
-    
-    <div class="verification-summary">
-      <div class="summary-item">
-        <span class="summary-label">Total Investors:</span>
-        <span class="summary-value">{{ verificationResults.totalInvestors }}</span>
-      </div>
-      <div class="summary-item">
-        <span class="summary-label">Passed:</span>
-        <span class="summary-value passed">{{ verificationResults.passed }}</span>
-      </div>
-      <div class="summary-item">
-        <span class="summary-label">Failed:</span>
-        <span class="summary-value failed">{{ verificationResults.failed }}</span>
-      </div>
-      <div class="summary-item">
-        <span class="summary-label">Success Rate:</span>
-        <span class="summary-value">{{ getSuccessRate() }}%</span>
-      </div>
-    </div>
-
-    <div class="verification-details">
-      <h3>Detailed Results</h3>
-      <div class="verification-list">
-        <div 
-          *ngFor="let result of verificationResults.details" 
-          class="verification-item"
-          [ngClass]="getStatusClass(result.status)">
-          
-          <div class="verification-item-header">
-            <span class="verification-icon">{{ getStatusIcon(result.status) }}</span>
-            <span class="verification-name">{{ result.investorName }}</span>
-          </div>
-          
-          <div class="verification-message">
-            {{ result.message }}
-          </div>
-
-          <div class="verification-details-expanded" *ngIf="result.details">
-            <div class="details-section">
-              <h4>Expected Results:</h4>
-              <div class="detail-grid">
-                <div class="detail-item">
-                  <span class="detail-label">Final Balance:</span>
-                  <span class="detail-value">{{ formatCurrency(result.details.expected.finalBalance) }}</span>
-                </div>
-                <div class="detail-item">
-                  <span class="detail-label">Total Invested:</span>
-                  <span class="detail-value">{{ formatCurrency(result.details.expected.totalInvested) }}</span>
-                </div>
-                <div class="detail-item">
-                  <span class="detail-label">Total Withdrawn:</span>
-                  <span class="detail-value">{{ formatCurrency(result.details.expected.totalWithdrawn) }}</span>
-                </div>
-                <div class="detail-item">
-                  <span class="detail-label">Total Interest:</span>
-                  <span class="detail-value">{{ formatCurrency(result.details.expected.totalInterest) }}</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="details-section">
-              <h4>Actual Results:</h4>
-              <div class="detail-grid">
-                <div class="detail-item">
-                  <span class="detail-label">Final Balance:</span>
-                  <span class="detail-value">{{ formatCurrency(result.details.actual.finalBalance) }}</span>
-                </div>
-                <div class="detail-item">
-                  <span class="detail-label">Total Invested:</span>
-                  <span class="detail-value">{{ formatCurrency(result.details.actual.totalInvested) }}</span>
-                </div>
-                <div class="detail-item">
-                  <span class="detail-label">Total Withdrawn:</span>
-                  <span class="detail-value">{{ formatCurrency(result.details.actual.totalWithdrawn) }}</span>
-                </div>
-                <div class="detail-item">
-                  <span class="detail-label">Total Interest:</span>
-                  <span class="detail-value">{{ formatCurrency(result.details.actual.totalInterest) }}</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="details-section">
-              <h4>Verification:</h4>
-              <div class="verification-grid">
-                <div class="verification-check">
-                  <span class="check-label">Balance Match:</span>
-                  <span class="check-value" [ngClass]="result.details.balanceMatch ? 'match-pass' : 'match-fail'">
-                    {{ result.details.balanceMatch ? '✅' : '❌' }}
-                  </span>
-                </div>
-                <div class="verification-check">
-                  <span class="check-label">Invested Match:</span>
-                  <span class="check-value" [ngClass]="result.details.investedMatch ? 'match-pass' : 'match-fail'">
-                    {{ result.details.investedMatch ? '✅' : '❌' }}
-                  </span>
-                </div>
-                <div class="verification-check">
-                  <span class="check-label">Withdrawn Match:</span>
-                  <span class="check-value" [ngClass]="result.details.withdrawnMatch ? 'match-pass' : 'match-fail'">
-                    {{ result.details.withdrawnMatch ? '✅' : '❌' }}
-                  </span>
-                </div>
-                <div class="verification-check">
-                  <span class="check-label">Interest Match:</span>
-                  <span class="check-value" [ngClass]="result.details.interestMatch ? 'match-pass' : 'match-fail'">
-                    {{ result.details.interestMatch ? '✅' : '❌' }}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
 
   <div *ngFor="let report of reports" class="report-card">
     <div class="report-card-header">

@@ -22,19 +22,4 @@ export class UserInterestService {
   }
 
 
-  async deleteUserRate(monthKey: string): Promise<void> {
-    const rateDoc = doc(this.firestore, 'rates', monthKey);
-    return deleteDoc(rateDoc);
-  }
-
-  // Get user rate for a specific month
-  async getUserRate(monthKey: string): Promise<MonthlyRate | null> {
-    const rateDoc = doc(this.firestore, 'rates', monthKey);
-    const rateSnapshot = await getDoc(rateDoc);
-    
-    if (rateSnapshot.exists()) {
-      return { id: rateSnapshot.id, ...rateSnapshot.data() } as MonthlyRate;
-    }
-    return null;
-  }
 }

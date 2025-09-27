@@ -149,10 +149,6 @@ export class InvestmentService {
     return collectionData(ratesCollection, { idField: 'id' }) as Observable<MonthlyRate[]>;
   }
 
-  setMonthlyRate(rate: any): Promise<void> {
-    const ratesDoc = doc(this.firestore, 'rates', rate.monthKey);
-    return setDoc(ratesDoc, rate, { merge: true });
-  }
 
   listTransactionsByInvestor(investorId: string): Observable<Transaction[]> {
     const transactionsCollection = collection(this.firestore, 'transactions');

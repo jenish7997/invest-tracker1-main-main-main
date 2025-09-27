@@ -26,14 +26,4 @@ export class AdminInterestService {
     return deleteDoc(rateDoc);
   }
 
-  // Get admin rate for a specific month
-  async getAdminRate(monthKey: string): Promise<MonthlyRate | null> {
-    const rateDoc = doc(this.firestore, 'adminRates', monthKey);
-    const rateSnapshot = await getDoc(rateDoc);
-    
-    if (rateSnapshot.exists()) {
-      return { id: rateSnapshot.id, ...rateSnapshot.data() } as MonthlyRate;
-    }
-    return null;
-  }
 }

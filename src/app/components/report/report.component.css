@@ -32,7 +32,7 @@
 }
 
 
-.refresh-btn, .advanced-testing-btn {
+.refresh-btn {
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -48,35 +48,16 @@
   box-shadow: 0 2px 8px rgba(26, 35, 126, 0.3);
 }
 
-.advanced-testing-btn {
-  background: linear-gradient(135deg, #e91e63, #f06292);
-  box-shadow: 0 2px 8px rgba(233, 30, 99, 0.3);
-}
-
 .refresh-btn:hover:not(:disabled) {
   background: linear-gradient(135deg, #0d47a1, #283593);
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(26, 35, 126, 0.4);
 }
 
-.advanced-testing-btn:hover:not(:disabled) {
-  background: linear-gradient(135deg, #c2185b, #e91e63);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(233, 30, 99, 0.4);
-}
-
-.refresh-btn:disabled, .advanced-testing-btn:disabled {
+.refresh-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
   transform: none;
-}
-
-.advanced-testing-section {
-  margin-top: 3rem;
-  padding: 2rem;
-  background: white;
-  border-radius: 15px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
 }
 
 .refresh-btn .material-icons {

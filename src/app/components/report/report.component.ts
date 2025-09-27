@@ -5,7 +5,6 @@ import { InvestmentService } from '../../services/investment.service';
 import { UserInterestService } from '../../services/user-interest.service';
 import { AuthService } from '../../services/auth.service';
 import { LoggerService } from '../../services/logger.service';
-import { AdvancedReportTestingComponent } from './advanced-report-testing.component';
 import { Investor } from '../../models';
 import { Subscription } from 'rxjs';
 
@@ -28,7 +27,7 @@ interface ReportData {
 @Component({
   selector: 'app-report',
   standalone: true,
-  imports: [CommonModule, AdvancedReportTestingComponent],
+  imports: [CommonModule],
   templateUrl: './report.component.html',
   styleUrls: ['./report.component.css']
 })
@@ -37,7 +36,6 @@ export class ReportComponent implements OnInit, OnDestroy {
   isAdmin: boolean = false;
   loading: boolean = true;
   error: string = '';
-  showAdvancedTesting: boolean = false;
   interestRates: Map<string, number> = new Map(); // Store rates by monthKey
   private currentUser: any = null; // Store current user info
   private userSubscription?: Subscription;
@@ -355,12 +353,6 @@ export class ReportComponent implements OnInit, OnDestroy {
     }
   }
 
-  toggleAdvancedTesting(): void {
-    console.log('Advanced testing button clicked!');
-    this.showAdvancedTesting = !this.showAdvancedTesting;
-    console.log('showAdvancedTesting is now:', this.showAdvancedTesting);
-    this.logger.debug('Advanced testing toggled', { showAdvancedTesting: this.showAdvancedTesting });
-  }
 
   // Calculate interest using user rates to prevent duplicates
   private calculateInterestUsingUserRates(rawTransactions: any[]): any[] {

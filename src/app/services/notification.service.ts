@@ -12,7 +12,4 @@ export class NotificationService {
     this.transactionAddedSubject.next(true);
   }
 
-  resetNotification() {
-    this.transactionAddedSubject.next(false);
-  }
 }
