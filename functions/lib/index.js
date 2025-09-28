@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateAdminInterestRate = exports.applyAdminMonthlyInterestAndRecalculate = exports.recalculateInterestForInvestor = void 0;
+exports.createInvestorUser = exports.updateAdminInterestRate = exports.applyAdminMonthlyInterestAndRecalculate = exports.recalculateInterestForInvestor = void 0;
 const admin = __importStar(require("firebase-admin"));
 const https_1 = require("firebase-functions/v2/https");
 const logger = __importStar(require("firebase-functions/logger"));
@@ -402,6 +402,40 @@ exports.updateAdminInterestRate = (0, https_1.onCall)({
     catch (error) {
         logger.error("Error updating admin interest rate:", error);
         throw new https_1.HttpsError("internal", "An unexpected error occurred while updating the admin interest rate.");
+    }
+});
+/**
+ * Creates a new investor user with a permanent password set by the admin.
+ */
+exports.createInvestorUser = (0, https_1.onCall)({
+    cors: corsOrigins
+}, async (request) => {
+    await verifyAdmin(request.auth);
+    const { name, email, password } = request.data;
+    if (!name || !email || !password) {
+        throw new https_1.HttpsError("invalid-argument", "Missing required fields.");
+    }
+    try {
+        const userRecord = await admin.auth().createUser({
+            email,
+            password,
+            displayName: name,
+        });
+        await admin.firestore().collection("investors").doc(userRecord.uid).set({
+            name,
+            email,
+            balance: 0,
+            uid: userRecord.uid,
+        });
+        logger.info("Successfully created new user:", { uid: userRecord.uid });
+        return { success: true, message: `Successfully created user for ${email}.` };
+    }
+    catch (error) {
+        logger.error("Error creating new investor user:", error);
+        if (error.code === "auth/email-already-exists") {
+            throw new https_1.HttpsError("already-exists", "This email address is already in use.");
+        }
+        throw new https_1.HttpsError("internal", "An unexpected error occurred.");
     }
 });
 //# sourceMappingURL=index.js.map

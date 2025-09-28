@@ -453,3 +453,43 @@ export const updateAdminInterestRate = onCall({
     throw new HttpsError("internal", "An unexpected error occurred while updating the admin interest rate.");
   }
 });
+
+/**
+ * Creates a new investor user with a permanent password set by the admin.
+ */
+export const createInvestorUser = onCall({
+  cors: corsOrigins
+}, async (request) => {
+  await verifyAdmin(request.auth);
+
+  const { name, email, password } = request.data;
+
+  if (!name || !email || !password) {
+    throw new HttpsError("invalid-argument", "Missing required fields.");
+  }
+
+  try {
+    const userRecord = await admin.auth().createUser({
+      email,
+      password,
+      displayName: name,
+    });
+
+    await admin.firestore().collection("investors").doc(userRecord.uid).set({
+      name,
+      email,
+      balance: 0,
+      uid: userRecord.uid,
+    });
+
+    logger.info("Successfully created new user:", { uid: userRecord.uid });
+    return { success: true, message: `Successfully created user for ${email}.` };
+
+  } catch (error: any) {
+    logger.error("Error creating new investor user:", error);
+    if (error.code === "auth/email-already-exists") {
+      throw new HttpsError("already-exists", "This email address is already in use.");
+    }
+    throw new HttpsError("internal", "An unexpected error occurred.");
+  }
+});
