@@ -33,59 +33,13 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.checkUserClaims = exports.manageAdminClaim = exports.updateAdminInterestRate = exports.applyAdminMonthlyInterestAndRecalculate = exports.recalculateInterestForInvestor = void 0;
+exports.updateAdminInterestRate = exports.applyAdminMonthlyInterestAndRecalculate = exports.recalculateInterestForInvestor = void 0;
 const admin = __importStar(require("firebase-admin"));
 const https_1 = require("firebase-functions/v2/https");
 const logger = __importStar(require("firebase-functions/logger"));
 admin.initializeApp();
-// Configure CORS origins for Firebase Functions v2
-const corsOrigins = [
-    // Development ports (comprehensive list)
-    'http://localhost:4200',
-    'https://localhost:4200',
-    'http://127.0.0.1:4200',
-    'https://127.0.0.1:4200',
-    'http://localhost:56295',
-    'https://localhost:56295',
-    'http://127.0.0.1:56295',
-    'https://127.0.0.1:56295',
-    'http://localhost:44242',
-    'https://localhost:44242',
-    'http://127.0.0.1:44242',
-    'https://127.0.0.1:44242',
-    'http://localhost:37352',
-    'https://localhost:37352',
-    'http://127.0.0.1:37352',
-    'https://127.0.0.1:37352',
-    'http://localhost:53953',
-    'https://localhost:53953',
-    'http://127.0.0.1:53953',
-    'https://127.0.0.1:53953',
-    'http://localhost:33705',
-    'https://localhost:33705',
-    'http://127.0.0.1:33705',
-    'https://127.0.0.1:33705',
-    'http://localhost:36529',
-    'https://localhost:36529',
-    'http://127.0.0.1:36529',
-    'https://127.0.0.1:36529',
-    'http://localhost:40790',
-    'https://localhost:40790',
-    'http://127.0.0.1:40790',
-    'https://127.0.0.1:40790',
-    // Common Angular dev server ports
-    'http://localhost:3000',
-    'https://localhost:3000',
-    'http://127.0.0.1:3000',
-    'https://127.0.0.1:3000',
-    'http://localhost:8080',
-    'https://localhost:8080',
-    'http://127.0.0.1:8080',
-    'https://127.0.0.1:8080',
-    // Production URLs
-    'https://invest-tracker-447ff.web.app',
-    'https://invest-tracker-447ff.firebaseapp.com'
-];
+// Configure CORS origins for Firebase Functions v2 - Allow all domains
+const corsOrigins = true; // This allows all origins
 /**
  * Verifies that the user making the request is an administrator.
  */
@@ -448,73 +402,6 @@ exports.updateAdminInterestRate = (0, https_1.onCall)({
     catch (error) {
         logger.error("Error updating admin interest rate:", error);
         throw new https_1.HttpsError("internal", "An unexpected error occurred while updating the admin interest rate.");
-    }
-});
-/**
- * Manage user admin claims - grant or revoke admin access
- */
-exports.manageAdminClaim = (0, https_1.onCall)({
-    cors: corsOrigins
-}, async (request) => {
-    await verifyAdmin(request.auth);
-    const { email, isAdmin } = request.data;
-    if (!email || typeof isAdmin !== 'boolean') {
-        throw new https_1.HttpsError("invalid-argument", "Missing 'email' or 'isAdmin' (boolean) parameter.");
-    }
-    try {
-        const user = await admin.auth().getUserByEmail(email);
-        await admin.auth().setCustomUserClaims(user.uid, { admin: isAdmin });
-        logger.info("Successfully updated admin claim", {
-            uid: user.uid,
-            email,
-            isAdmin
-        });
-        return {
-            success: true,
-            message: `Successfully ${isAdmin ? 'granted' : 'revoked'} admin privileges for ${email}.`
-        };
-    }
-    catch (error) {
-        logger.error("Error managing admin claim:", error);
-        if (error.code === "auth/user-not-found") {
-            throw new https_1.HttpsError("not-found", "User with this email address does not exist.");
-        }
-        throw new https_1.HttpsError("internal", "An unexpected error occurred while managing admin claim.");
-    }
-});
-/**
- * Check user claims - get current admin status
- */
-exports.checkUserClaims = (0, https_1.onCall)({
-    cors: corsOrigins
-}, async (request) => {
-    var _a;
-    await verifyAdmin(request.auth);
-    const { email } = request.data;
-    if (!email) {
-        throw new https_1.HttpsError("invalid-argument", "Missing 'email' parameter.");
-    }
-    try {
-        const user = await admin.auth().getUserByEmail(email);
-        logger.info("Retrieved user claims", {
-            uid: user.uid,
-            email,
-            customClaims: user.customClaims
-        });
-        return {
-            success: true,
-            email: user.email,
-            uid: user.uid,
-            isAdmin: ((_a = user.customClaims) === null || _a === void 0 ? void 0 : _a.admin) === true || false,
-            customClaims: user.customClaims || {}
-        };
-    }
-    catch (error) {
-        logger.error("Error checking user claims:", error);
-        if (error.code === "auth/user-not-found") {
-            throw new https_1.HttpsError("not-found", "User with this email address does not exist.");
-        }
-        throw new https_1.HttpsError("internal", "An unexpected error occurred while checking user claims.");
     }
 });
 //# sourceMappingURL=index.js.map

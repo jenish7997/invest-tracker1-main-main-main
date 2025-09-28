@@ -4,55 +4,8 @@ import * as logger from "firebase-functions/logger";
 
 admin.initializeApp();
 
-// Configure CORS origins for Firebase Functions v2
-const corsOrigins = [
-  // Development ports (comprehensive list)
-  'http://localhost:4200',
-  'https://localhost:4200',
-  'http://127.0.0.1:4200',
-  'https://127.0.0.1:4200',
-  'http://localhost:56295',
-  'https://localhost:56295',
-  'http://127.0.0.1:56295',
-  'https://127.0.0.1:56295',
-  'http://localhost:44242',
-  'https://localhost:44242',
-  'http://127.0.0.1:44242',
-  'https://127.0.0.1:44242',
-  'http://localhost:37352',
-  'https://localhost:37352',
-  'http://127.0.0.1:37352',
-  'https://127.0.0.1:37352',
-  'http://localhost:53953',
-  'https://localhost:53953',
-  'http://127.0.0.1:53953',
-  'https://127.0.0.1:53953',
-  'http://localhost:33705',
-  'https://localhost:33705',
-  'http://127.0.0.1:33705',
-  'https://127.0.0.1:33705',
-  'http://localhost:36529',
-  'https://localhost:36529',
-  'http://127.0.0.1:36529',
-  'https://127.0.0.1:36529',
-  'http://localhost:40790',
-  'https://localhost:40790',
-  'http://127.0.0.1:40790',
-  'https://127.0.0.1:40790',
-  // Common Angular dev server ports
-  'http://localhost:3000',
-  'https://localhost:3000',
-  'http://127.0.0.1:3000',
-  'https://127.0.0.1:3000',
-  'http://localhost:8080',
-  'https://localhost:8080',
-  'http://127.0.0.1:8080',
-  'https://127.0.0.1:8080',
-  // Production URLs
-  'https://invest-tracker-447ff.web.app',
-  'https://invest-tracker-447ff.firebaseapp.com',
-  'https://grownest-eight.vercel.app'
-];
+// Configure CORS origins for Firebase Functions v2 - Allow all domains
+const corsOrigins = true; // This allows all origins
 
 /**
  * Verifies that the user making the request is an administrator.
