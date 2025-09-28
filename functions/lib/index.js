@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateAdminInterestRate = exports.applyAdminMonthlyInterestAndRecalculate = exports.applyMonthlyInterestAndRecalculate = exports.updateInterestRate = exports.deleteInvestor = exports.recalculateInterestForInvestor = exports.cleanupOrphanedInvestors = exports.setupInitialAdmin = exports.setAdminClaim = exports.createInvestorUser = void 0;
+exports.checkUserClaims = exports.manageAdminClaim = exports.updateAdminInterestRate = exports.applyAdminMonthlyInterestAndRecalculate = exports.recalculateInterestForInvestor = void 0;
 const admin = __importStar(require("firebase-admin"));
 const https_1 = require("firebase-functions/v2/https");
 const logger = __importStar(require("firebase-functions/logger"));
@@ -98,173 +98,6 @@ async function verifyAdmin(auth) {
     }
 }
 /**
- * Creates a new investor user with a permanent password set by the admin.
- */
-exports.createInvestorUser = (0, https_1.onCall)({
-    cors: corsOrigins
-}, async (request) => {
-    await verifyAdmin(request.auth);
-    const { name, email, password } = request.data;
-    if (!name || !email || !password) {
-        throw new https_1.HttpsError("invalid-argument", "Missing required fields.");
-    }
-    try {
-        const userRecord = await admin.auth().createUser({
-            email,
-            password,
-            displayName: name,
-        });
-        await admin.firestore().collection("investors").doc(userRecord.uid).set({
-            name,
-            email,
-            balance: 0,
-            uid: userRecord.uid,
-        });
-        logger.info("Successfully created new user:", { uid: userRecord.uid });
-        return { success: true, message: `Successfully created user for ${email}.` };
-    }
-    catch (error) {
-        logger.error("Error creating new investor user:", error);
-        if (error.code === "auth/email-already-exists") {
-            throw new https_1.HttpsError("already-exists", "This email address is already in use.");
-        }
-        throw new https_1.HttpsError("internal", "An unexpected error occurred.");
-    }
-});
-/**
- * Sets admin claim for a user - only callable by existing admins
- */
-exports.setAdminClaim = (0, https_1.onCall)({
-    cors: corsOrigins
-}, async (request) => {
-    await verifyAdmin(request.auth);
-    const { email } = request.data;
-    if (!email) {
-        throw new https_1.HttpsError("invalid-argument", "Email is required.");
-    }
-    try {
-        const user = await admin.auth().getUserByEmail(email);
-        await admin.auth().setCustomUserClaims(user.uid, { admin: true });
-        logger.info("Successfully set admin claim for user:", { uid: user.uid, email });
-        return { success: true, message: `Successfully granted admin privileges to ${email}.` };
-    }
-    catch (error) {
-        logger.error("Error setting admin claim:", error);
-        if (error.code === "auth/user-not-found") {
-            throw new https_1.HttpsError("not-found", "User with this email address does not exist.");
-        }
-        throw new https_1.HttpsError("internal", "An unexpected error occurred.");
-    }
-});
-/**
- * Initial admin setup - can only be called once when no admins exist
- */
-exports.setupInitialAdmin = (0, https_1.onCall)({
-    cors: corsOrigins
-}, async (request) => {
-    const { email, password } = request.data;
-    if (!email || !password) {
-        throw new https_1.HttpsError("invalid-argument", "Email and password are required.");
-    }
-    try {
-        // Check if any admin already exists
-        const adminQuery = await admin.firestore().collection("adminSetup").doc("initialized").get();
-        if (adminQuery.exists) {
-            throw new https_1.HttpsError("permission-denied", "Initial admin has already been set up.");
-        }
-        // Create the admin user
-        const userRecord = await admin.auth().createUser({
-            email,
-            password,
-            displayName: "Admin"
-        });
-        // Set admin claim
-        await admin.auth().setCustomUserClaims(userRecord.uid, { admin: true });
-        // Mark admin setup as complete
-        await admin.firestore().collection("adminSetup").doc("initialized").set({
-            initialized: true,
-            adminEmail: email,
-            createdAt: admin.firestore.FieldValue.serverTimestamp()
-        });
-        logger.info("Successfully created initial admin:", { uid: userRecord.uid, email });
-        return { success: true, message: `Successfully created admin account for ${email}.` };
-    }
-    catch (error) {
-        logger.error("Error setting up initial admin:", error);
-        if (error.code === "auth/email-already-exists") {
-            throw new https_1.HttpsError("already-exists", "This email address is already in use.");
-        }
-        throw new https_1.HttpsError("internal", "An unexpected error occurred.");
-    }
-});
-/**
- * Cleans up orphaned investor data - removes Firestore documents for users that no longer exist in Auth
- */
-exports.cleanupOrphanedInvestors = (0, https_1.onCall)({
-    cors: corsOrigins
-}, async (request) => {
-    await verifyAdmin(request.auth);
-    try {
-        // Get all investor documents from Firestore
-        const investorsSnapshot = await admin.firestore().collection("investors").get();
-        if (investorsSnapshot.empty) {
-            return { success: true, message: "No investors found to clean up." };
-        }
-        const batch = admin.firestore().batch();
-        let deletedCount = 0;
-        const orphanedUsers = [];
-        // Check each investor document
-        for (const doc of investorsSnapshot.docs) {
-            const investorData = doc.data();
-            const uid = doc.id; // Document ID should match the Auth UID
-            try {
-                // Try to get the user from Firebase Auth
-                await admin.auth().getUser(uid);
-                // If we get here, user exists in Auth - keep the data
-            }
-            catch (authError) {
-                if (authError.code === 'auth/user-not-found') {
-                    // User doesn't exist in Auth - mark for deletion
-                    batch.delete(doc.ref);
-                    deletedCount++;
-                    orphanedUsers.push({
-                        uid: uid,
-                        name: investorData.name,
-                        email: investorData.email
-                    });
-                    // Also delete their transactions
-                    const transactionsQuery = await admin.firestore()
-                        .collection("transactions")
-                        .where("investorId", "==", uid)
-                        .get();
-                    transactionsQuery.docs.forEach(transactionDoc => {
-                        batch.delete(transactionDoc.ref);
-                    });
-                }
-                else {
-                    logger.warn(`Error checking user ${uid}:`, authError);
-                }
-            }
-        }
-        if (deletedCount > 0) {
-            await batch.commit();
-            logger.info(`Cleaned up ${deletedCount} orphaned investors:`, orphanedUsers);
-            return {
-                success: true,
-                message: `Successfully cleaned up ${deletedCount} orphaned investors and their transactions.`,
-                deletedInvestors: orphanedUsers
-            };
-        }
-        else {
-            return { success: true, message: "No orphaned investors found." };
-        }
-    }
-    catch (error) {
-        logger.error("Error cleaning up orphaned investors:", error);
-        throw new https_1.HttpsError("internal", "An unexpected error occurred while cleaning up data.");
-    }
-});
-/**
  * Recalculates interest for a specific investor by removing all existing interest and recalculating
  */
 exports.recalculateInterestForInvestor = (0, https_1.onCall)({
@@ -323,14 +156,14 @@ exports.recalculateInterestForInvestor = (0, https_1.onCall)({
             batch.delete(transactionsRef.doc(transaction.id));
         });
         // Calculate new interest for each month
-        let totalInterestApplied = 0;
         let processedMonths = 0;
         // Get all months that have rates
         const monthsWithRates = Array.from(availableRates.keys()).sort();
         console.log(`[DEBUG] Available rates:`, availableRates);
         console.log(`[DEBUG] Months with rates:`, monthsWithRates);
-        // Process each month that has rates (for compounding interest, we need to process all months with rates)
-        let runningBalance = 0; // This will track the compounding balance
+        // Process each month that has rates (for compound interest, we calculate on principal + previous interest)
+        let totalInterestApplied = 0; // Track total interest for balance update
+        let compoundBalance = 0; // Track compound balance including previous interest
         for (const monthKey of monthsWithRates) {
             console.log(`[DEBUG] Processing month: ${monthKey}`);
             const rate = availableRates.get(monthKey);
@@ -350,11 +183,11 @@ exports.recalculateInterestForInvestor = (0, https_1.onCall)({
                     }
                 }
             }
-            // Add all interest from previous months (compounding)
-            balanceAtMonthEnd += runningBalance;
-            console.log(`[DEBUG] Month ${monthKey}: balanceAtMonthEnd = ${balanceAtMonthEnd}, rate = ${rate}`);
-            if (balanceAtMonthEnd > 0) {
-                const interestAmount = balanceAtMonthEnd * rate;
+            // For compound interest, add previous interest to the balance
+            const totalBalanceForInterest = balanceAtMonthEnd + compoundBalance;
+            console.log(`[DEBUG] Month ${monthKey}: principalAtMonthEnd = ${balanceAtMonthEnd}, compoundBalance = ${compoundBalance}, totalBalanceForInterest = ${totalBalanceForInterest}, rate = ${rate}`);
+            if (totalBalanceForInterest > 0) {
+                const interestAmount = totalBalanceForInterest * rate;
                 console.log(`[DEBUG] Month ${monthKey}: interestAmount = ${interestAmount}`);
                 // Create new interest transaction
                 const transactionDocRef = transactionsRef.doc();
@@ -366,14 +199,15 @@ exports.recalculateInterestForInvestor = (0, https_1.onCall)({
                     amount: interestAmount,
                     createdAt: admin.firestore.Timestamp.now()
                 });
-                // Update running balance for next month (compounding)
-                runningBalance += interestAmount;
-                console.log(`[DEBUG] Month ${monthKey}: runningBalance = ${runningBalance}`);
+                // Update compound balance for next month
+                compoundBalance += interestAmount;
+                // Track total interest applied
                 totalInterestApplied += interestAmount;
+                console.log(`[DEBUG] Month ${monthKey}: interestAmount = ${interestAmount}, compoundBalance = ${compoundBalance}, totalInterestApplied = ${totalInterestApplied}`);
                 processedMonths++;
             }
             else {
-                console.log(`[DEBUG] Month ${monthKey}: No interest calculated (balanceAtMonthEnd = ${balanceAtMonthEnd})`);
+                console.log(`[DEBUG] Month ${monthKey}: No interest calculated (totalBalanceForInterest = ${totalBalanceForInterest})`);
             }
         }
         // Update investor balance (remove old interest, add new interest)
@@ -396,303 +230,6 @@ exports.recalculateInterestForInvestor = (0, https_1.onCall)({
     catch (error) {
         logger.error("Error recalculating interest:", error);
         throw new https_1.HttpsError("internal", "An unexpected error occurred while recalculating interest.");
-    }
-});
-/**
- * Deletes an investor and all their associated data
- */
-exports.deleteInvestor = (0, https_1.onCall)({
-    cors: corsOrigins
-}, async (request) => {
-    await verifyAdmin(request.auth);
-    const { investorId } = request.data;
-    if (!investorId) {
-        throw new https_1.HttpsError("invalid-argument", "Investor ID is required.");
-    }
-    try {
-        const batch = admin.firestore().batch();
-        let deletedTransactions = 0;
-        // Delete the investor document
-        const investorRef = admin.firestore().collection("investors").doc(investorId);
-        batch.delete(investorRef);
-        // Delete all transactions for this investor
-        const transactionsQuery = await admin.firestore()
-            .collection("transactions")
-            .where("investorId", "==", investorId)
-            .get();
-        transactionsQuery.docs.forEach(transactionDoc => {
-            batch.delete(transactionDoc.ref);
-            deletedTransactions++;
-        });
-        // Delete the user from Firebase Auth
-        try {
-            await admin.auth().deleteUser(investorId);
-            logger.info(`Successfully deleted user from Auth: ${investorId}`);
-        }
-        catch (authError) {
-            if (authError.code === 'auth/user-not-found') {
-                logger.warn(`User ${investorId} not found in Auth, continuing with Firestore cleanup`);
-            }
-            else {
-                throw authError;
-            }
-        }
-        // Commit all deletions
-        await batch.commit();
-        logger.info(`Successfully deleted investor ${investorId} and ${deletedTransactions} transactions`);
-        return {
-            success: true,
-            message: `Successfully deleted investor and ${deletedTransactions} associated transactions.`,
-            deletedTransactions
-        };
-    }
-    catch (error) {
-        logger.error("Error deleting investor:", error);
-        throw new https_1.HttpsError("internal", "An unexpected error occurred while deleting the investor.");
-    }
-});
-/**
- * Updates an existing interest rate and recalculates interest amounts
- */
-exports.updateInterestRate = (0, https_1.onCall)({
-    cors: corsOrigins
-}, async (request) => {
-    await verifyAdmin(request.auth);
-    const { monthKey, oldRate, newRate } = request.data;
-    if (!monthKey || oldRate == null || newRate == null) {
-        throw new https_1.HttpsError("invalid-argument", "Missing 'monthKey', 'oldRate', or 'newRate'.");
-    }
-    if (newRate < 0 || newRate > 1) {
-        throw new https_1.HttpsError("invalid-argument", "New rate must be between 0 and 1.");
-    }
-    try {
-        logger.info("Starting updateInterestRate", { monthKey, oldRate, newRate });
-        const ratesRef = admin.firestore().collection("rates");
-        const transactionsRef = admin.firestore().collection("transactions");
-        const investorsRef = admin.firestore().collection("investors");
-        // Update the rate in the rates collection
-        await ratesRef.doc(monthKey).set({ monthKey, rate: newRate }, { merge: true });
-        logger.info("Rate updated in rates collection", { monthKey, newRate });
-        // Get all interest transactions for this month
-        const year = parseInt(monthKey.split('-')[0], 10);
-        const month = parseInt(monthKey.split('-')[1], 10) - 1;
-        // Get all interest transactions first, then filter by date
-        const allInterestTransactionsQuery = await transactionsRef
-            .where('type', '==', 'interest')
-            .get();
-        // Filter by date range - be more inclusive for edge cases
-        const interestTransactions = allInterestTransactionsQuery.docs.filter(doc => {
-            const transaction = doc.data();
-            const transactionDate = transaction.date.toDate();
-            // Check if the transaction year and month match exactly
-            const transactionYear = transactionDate.getFullYear();
-            const transactionMonth = transactionDate.getMonth();
-            logger.info("Checking transaction date", {
-                monthKey,
-                transactionDate: transactionDate.toISOString(),
-                transactionYear,
-                transactionMonth,
-                targetYear: year,
-                targetMonth: month,
-                matches: transactionYear === year && transactionMonth === month
-            });
-            return transactionYear === year && transactionMonth === month;
-        });
-        logger.info("Found interest transactions to update", {
-            totalInterestTransactions: allInterestTransactionsQuery.docs.length,
-            filteredForMonth: interestTransactions.length,
-            monthKey,
-            year,
-            month: month + 1 // Show 1-based month for clarity
-        });
-        if (interestTransactions.length === 0) {
-            return {
-                success: true,
-                message: `Rate updated to ${(newRate * 100).toFixed(1)}% for ${monthKey}. No existing interest transactions found to update.`
-            };
-        }
-        // Get all investors to update their balances
-        const investorsSnapshot = await investorsRef.get();
-        const investorBalances = new Map();
-        for (const doc of investorsSnapshot.docs) {
-            investorBalances.set(doc.id, doc.data().balance || 0);
-        }
-        const batch = admin.firestore().batch();
-        let updatedTransactions = 0;
-        let totalInterestAdjustment = 0;
-        // Update each interest transaction
-        for (const transactionDoc of interestTransactions) {
-            const transaction = transactionDoc.data();
-            const investorId = transaction.investorId;
-            // Calculate the principal amount that was used for this interest calculation
-            // We need to get the balance at the beginning of the month (before any transactions in that month)
-            const startOfMonth = new Date(year, month, 1);
-            const principalQuery = await transactionsRef
-                .where('investorId', '==', investorId)
-                .where('date', '<', admin.firestore.Timestamp.fromDate(startOfMonth))
-                .orderBy('date', 'asc')
-                .get();
-            let principalAmount = 0;
-            principalQuery.docs.forEach(doc => {
-                const t = doc.data();
-                if (t.type === 'invest' || t.type === 'deposit' || t.type === 'interest') {
-                    principalAmount += t.amount;
-                }
-                else if (t.type === 'withdraw') {
-                    principalAmount -= t.amount;
-                }
-            });
-            // Also need to add any transactions that happened on the first day of the month
-            // but before the interest transaction
-            const firstDayOfMonth = new Date(year, month, 1);
-            const interestTransactionDate = transaction.date.toDate();
-            const firstDayTransactionsQuery = await transactionsRef
-                .where('investorId', '==', investorId)
-                .where('date', '>=', admin.firestore.Timestamp.fromDate(firstDayOfMonth))
-                .where('date', '<', admin.firestore.Timestamp.fromDate(interestTransactionDate))
-                .orderBy('date', 'asc')
-                .get();
-            firstDayTransactionsQuery.docs.forEach(doc => {
-                const t = doc.data();
-                if (t.type === 'invest' || t.type === 'deposit' || t.type === 'interest') {
-                    principalAmount += t.amount;
-                }
-                else if (t.type === 'withdraw') {
-                    principalAmount -= t.amount;
-                }
-            });
-            if (principalAmount > 0) {
-                // Calculate the new interest amount
-                const newInterestAmount = principalAmount * newRate;
-                const interestAdjustment = newInterestAmount - transaction.amount;
-                // Update the transaction
-                batch.update(transactionDoc.ref, { amount: newInterestAmount });
-                // Update the investor's balance
-                const currentBalance = investorBalances.get(investorId) || 0;
-                const newBalance = currentBalance + interestAdjustment;
-                investorBalances.set(investorId, newBalance);
-                totalInterestAdjustment += interestAdjustment;
-                updatedTransactions++;
-                logger.info(`Updated interest for investor ${investorId}`, {
-                    monthKey,
-                    principalAmount,
-                    oldInterest: transaction.amount,
-                    newInterest: newInterestAmount,
-                    adjustment: interestAdjustment
-                });
-            }
-        }
-        // Update all affected investor balances
-        for (const [investorId, newBalance] of investorBalances) {
-            const investorDocRef = investorsRef.doc(investorId);
-            batch.update(investorDocRef, { balance: newBalance });
-        }
-        logger.info("Committing batch update", {
-            updatedTransactions,
-            totalInterestAdjustment
-        });
-        await batch.commit();
-        logger.info("Successfully updated interest rate and recalculated amounts", {
-            monthKey,
-            newRate,
-            updatedTransactions,
-            totalInterestAdjustment
-        });
-        return {
-            success: true,
-            message: `Rate updated to ${(newRate * 100).toFixed(1)}% for ${monthKey}. Updated ${updatedTransactions} interest transactions with total adjustment of ₹${totalInterestAdjustment.toFixed(2)}.`
-        };
-    }
-    catch (error) {
-        logger.error("Error updating interest rate:", error);
-        throw new https_1.HttpsError("internal", "An unexpected error occurred while updating the interest rate.");
-    }
-});
-/**
- * Applies monthly interest to all investors and recalculates existing interest
- */
-exports.applyMonthlyInterestAndRecalculate = (0, https_1.onCall)({
-    cors: corsOrigins
-}, async (request) => {
-    await verifyAdmin(request.auth);
-    const { monthKey, rate } = request.data;
-    if (!monthKey || rate == null) {
-        throw new https_1.HttpsError("invalid-argument", "Missing 'monthKey' or 'rate'.");
-    }
-    if (rate < 0 || rate > 1) {
-        throw new https_1.HttpsError("invalid-argument", "Rate must be between 0 and 1.");
-    }
-    try {
-        const year = parseInt(monthKey.split('-')[0], 10);
-        const month = parseInt(monthKey.split('-')[1], 10) - 1;
-        const interestDate = new Date(year, month, new Date(year, month + 1, 0).getDate());
-        const investorsRef = admin.firestore().collection("investors");
-        const transactionsRef = admin.firestore().collection("transactions");
-        const ratesRef = admin.firestore().collection("rates");
-        // Save the rate for historical tracking
-        await ratesRef.doc(monthKey).set({ monthKey, rate });
-        const investorsSnapshot = await investorsRef.get();
-        if (investorsSnapshot.empty) {
-            return { success: true, message: "No investors found to apply interest to." };
-        }
-        const batch = admin.firestore().batch();
-        let processedCount = 0;
-        for (const doc of investorsSnapshot.docs) {
-            const investor = doc.data();
-            // Calculate the balance at the end of this month (including all transactions up to this point)
-            const monthEndDate = new Date(year, month, new Date(year, month + 1, 0).getDate());
-            // Get all transactions for this investor up to the end of current month
-            const transactionsQuery = await transactionsRef
-                .where('investorId', '==', doc.id)
-                .where('date', '<=', admin.firestore.Timestamp.fromDate(monthEndDate))
-                .orderBy('date', 'asc')
-                .get();
-            let balanceAtMonthEnd = 0;
-            let existingInterestForThisMonth = 0;
-            transactionsQuery.docs.forEach(transactionDoc => {
-                const transaction = transactionDoc.data();
-                if (transaction.type === 'invest' || transaction.type === 'deposit' || transaction.type === 'interest') {
-                    balanceAtMonthEnd += transaction.amount;
-                    // Check if this is an existing interest transaction for the same month
-                    if (transaction.type === 'interest') {
-                        const transactionDate = transaction.date.toDate();
-                        if (transactionDate.getFullYear() === year && transactionDate.getMonth() === month) {
-                            existingInterestForThisMonth += transaction.amount;
-                        }
-                    }
-                }
-                else if (transaction.type === 'withdraw') {
-                    balanceAtMonthEnd -= transaction.amount;
-                }
-            });
-            // Only apply interest if there's a positive balance and no existing interest for this month
-            if (balanceAtMonthEnd > 0 && existingInterestForThisMonth === 0) {
-                // Calculate compound interest on the balance at month end
-                const interestAmount = balanceAtMonthEnd * rate;
-                // Create an interest transaction
-                const transactionDocRef = transactionsRef.doc();
-                batch.set(transactionDocRef, {
-                    investorId: doc.id,
-                    investorName: investor.name,
-                    date: admin.firestore.Timestamp.fromDate(interestDate),
-                    type: 'interest',
-                    amount: interestAmount,
-                    createdAt: admin.firestore.Timestamp.now()
-                });
-                // Update the investor's balance by adding the interest
-                const investorDocRef = investorsRef.doc(doc.id);
-                const currentBalance = investor.balance || 0;
-                const newBalance = currentBalance + interestAmount;
-                batch.update(investorDocRef, { balance: newBalance });
-                processedCount++;
-            }
-        }
-        await batch.commit();
-        return { success: true, message: `Successfully applied compound interest to ${processedCount} investors for ${monthKey}.` };
-    }
-    catch (error) {
-        logger.error("Error applying monthly interest:", error);
-        throw new https_1.HttpsError("internal", "An unexpected error occurred while applying interest.");
     }
 });
 // ===== ADMIN INTEREST FUNCTIONS =====
@@ -739,23 +276,24 @@ exports.applyAdminMonthlyInterestAndRecalculate = (0, https_1.onCall)({
             let existingInterestForThisMonth = 0;
             transactionsQuery.docs.forEach(transactionDoc => {
                 const transaction = transactionDoc.data();
-                if (transaction.type === 'invest' || transaction.type === 'deposit' || transaction.type === 'interest') {
+                if (transaction.type === 'invest' || transaction.type === 'deposit') {
                     balanceAtMonthEnd += transaction.amount;
-                    // Check if this is an existing interest transaction for the same month
-                    if (transaction.type === 'interest') {
-                        const transactionDate = transaction.date.toDate();
-                        if (transactionDate.getFullYear() === year && transactionDate.getMonth() === month) {
-                            existingInterestForThisMonth += transaction.amount;
-                        }
-                    }
                 }
                 else if (transaction.type === 'withdraw') {
                     balanceAtMonthEnd -= transaction.amount;
                 }
+                else if (transaction.type === 'interest') {
+                    // Check if this is an existing interest transaction for the same month
+                    const transactionDate = transaction.date.toDate();
+                    if (transactionDate.getFullYear() === year && transactionDate.getMonth() === month) {
+                        existingInterestForThisMonth += transaction.amount;
+                    }
+                    // Don't include interest in balance calculation for simple interest
+                }
             });
             // Only apply interest if there's a positive balance and no existing interest for this month
             if (balanceAtMonthEnd > 0 && existingInterestForThisMonth === 0) {
-                // Calculate compound interest on the balance at month end
+                // Calculate simple interest on the balance at month end
                 const interestAmount = balanceAtMonthEnd * rate;
                 // Create an interest transaction
                 const transactionDocRef = transactionsRef.doc();
@@ -855,12 +393,13 @@ exports.updateAdminInterestRate = (0, https_1.onCall)({
             let principalAmount = 0;
             principalQuery.docs.forEach(doc => {
                 const t = doc.data();
-                if (t.type === 'invest' || t.type === 'deposit' || t.type === 'interest') {
+                if (t.type === 'invest' || t.type === 'deposit') {
                     principalAmount += t.amount;
                 }
                 else if (t.type === 'withdraw') {
                     principalAmount -= t.amount;
                 }
+                // Don't include interest in principal calculation for simple interest
             });
             // Also need to add any transactions that happened on the first day of the month
             const firstDayOfMonth = new Date(year, month, 1);
@@ -873,12 +412,13 @@ exports.updateAdminInterestRate = (0, https_1.onCall)({
                 .get();
             firstDayTransactionsQuery.docs.forEach(doc => {
                 const t = doc.data();
-                if (t.type === 'invest' || t.type === 'deposit' || t.type === 'interest') {
+                if (t.type === 'invest' || t.type === 'deposit') {
                     principalAmount += t.amount;
                 }
                 else if (t.type === 'withdraw') {
                     principalAmount -= t.amount;
                 }
+                // Don't include interest in principal calculation for simple interest
             });
             if (principalAmount > 0) {
                 // Calculate the new interest amount
@@ -908,6 +448,73 @@ exports.updateAdminInterestRate = (0, https_1.onCall)({
     catch (error) {
         logger.error("Error updating admin interest rate:", error);
         throw new https_1.HttpsError("internal", "An unexpected error occurred while updating the admin interest rate.");
+    }
+});
+/**
+ * Manage user admin claims - grant or revoke admin access
+ */
+exports.manageAdminClaim = (0, https_1.onCall)({
+    cors: corsOrigins
+}, async (request) => {
+    await verifyAdmin(request.auth);
+    const { email, isAdmin } = request.data;
+    if (!email || typeof isAdmin !== 'boolean') {
+        throw new https_1.HttpsError("invalid-argument", "Missing 'email' or 'isAdmin' (boolean) parameter.");
+    }
+    try {
+        const user = await admin.auth().getUserByEmail(email);
+        await admin.auth().setCustomUserClaims(user.uid, { admin: isAdmin });
+        logger.info("Successfully updated admin claim", {
+            uid: user.uid,
+            email,
+            isAdmin
+        });
+        return {
+            success: true,
+            message: `Successfully ${isAdmin ? 'granted' : 'revoked'} admin privileges for ${email}.`
+        };
+    }
+    catch (error) {
+        logger.error("Error managing admin claim:", error);
+        if (error.code === "auth/user-not-found") {
+            throw new https_1.HttpsError("not-found", "User with this email address does not exist.");
+        }
+        throw new https_1.HttpsError("internal", "An unexpected error occurred while managing admin claim.");
+    }
+});
+/**
+ * Check user claims - get current admin status
+ */
+exports.checkUserClaims = (0, https_1.onCall)({
+    cors: corsOrigins
+}, async (request) => {
+    var _a;
+    await verifyAdmin(request.auth);
+    const { email } = request.data;
+    if (!email) {
+        throw new https_1.HttpsError("invalid-argument", "Missing 'email' parameter.");
+    }
+    try {
+        const user = await admin.auth().getUserByEmail(email);
+        logger.info("Retrieved user claims", {
+            uid: user.uid,
+            email,
+            customClaims: user.customClaims
+        });
+        return {
+            success: true,
+            email: user.email,
+            uid: user.uid,
+            isAdmin: ((_a = user.customClaims) === null || _a === void 0 ? void 0 : _a.admin) === true || false,
+            customClaims: user.customClaims || {}
+        };
+    }
+    catch (error) {
+        logger.error("Error checking user claims:", error);
+        if (error.code === "auth/user-not-found") {
+            throw new https_1.HttpsError("not-found", "User with this email address does not exist.");
+        }
+        throw new https_1.HttpsError("internal", "An unexpected error occurred while checking user claims.");
     }
 });
 //# sourceMappingURL=index.js.map

@@ -50,7 +50,8 @@ const corsOrigins = [
   'https://127.0.0.1:8080',
   // Production URLs
   'https://invest-tracker-447ff.web.app',
-  'https://invest-tracker-447ff.firebaseapp.com'
+  'https://invest-tracker-447ff.firebaseapp.com',
+  'https://grownest-eight.vercel.app'
 ];
 
 /**
