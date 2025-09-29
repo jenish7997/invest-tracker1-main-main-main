@@ -63,8 +63,8 @@
 
   <div class="report-results">
     <div *ngIf="rows.length && summary; else emptyState">
-      <!-- Summary Cards -->
-      <div class="summary-cards">
+      <!-- Summary Cards - Desktop -->
+      <div class="summary-cards desktop-only">
         <div class="summary-card principal">
           <div class="card-icon">
             <span class="material-icons">account_balance</span>
@@ -99,6 +99,42 @@
           <div class="card-content">
             <h4>Grown Capital</h4>
             <p class="amount">₹{{ summary.grownCapital | number:'1.2-2' }}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mobile Summary Cards - Beautiful Design -->
+      <div class="mobile-summary-cards mobile-only">
+        <div class="mobile-summary-card principal">
+          <div class="mobile-summary-icon">
+            <span class="material-icons">account_balance</span>
+          </div>
+          <div class="mobile-summary-content">
+            <h4>PRINCIPAL AMOUNT</h4>
+            <p class="mobile-summary-value">₹{{ summary.principalAmount | number:'1.2-2' }}</p>
+          </div>
+        </div>
+
+        <div class="mobile-summary-card interest">
+          <div class="mobile-summary-icon">
+            <span class="material-icons">trending_up</span>
+          </div>
+          <div class="mobile-summary-content">
+            <h4>TOTAL INTEREST</h4>
+            <p class="mobile-summary-value">₹{{ summary.totalInterest | number:'1.2-2' }}</p>
+            <div class="mobile-interest-breakdown" *ngIf="summary.interestByMonth.length">
+              <small>Average Return: {{ (summary.totalInterest / summary.principalAmount * 100) | number:'1.1-1' }}%</small>
+            </div>
+          </div>
+        </div>
+
+        <div class="mobile-summary-card total">
+          <div class="mobile-summary-icon">
+            <span class="material-icons">savings</span>
+          </div>
+          <div class="mobile-summary-content">
+            <h4>GROWN CAPITAL</h4>
+            <p class="mobile-summary-value">₹{{ summary.grownCapital | number:'1.2-2' }}</p>
           </div>
         </div>
       </div>
@@ -160,7 +196,7 @@
           </table>
         </div>
 
-        <!-- Mobile Card View -->
+        <!-- Mobile Card View - Beautiful Design -->
         <div class="mobile-cards mobile-only">
           <div *ngFor="let month of rows" class="month-group-mobile">
             <div class="month-header-mobile">{{ month.monthKey }}</div>
@@ -182,20 +218,20 @@
                 <div class="card-body-mobile">
                   <div class="amounts-mobile">
                     <div *ngIf="transaction.type === 'invest' || transaction.type === 'deposit'" class="amount-item-mobile principal">
-                      <span class="amount-label">Principal:</span>
+                      <span class="amount-label">PRINCIPAL:</span>
                       <span class="amount-value">₹{{ transaction.amount | number:'1.2-2' }}</span>
                     </div>
                     <div *ngIf="transaction.type === 'interest'" class="amount-item-mobile interest">
-                      <span class="amount-label">Interest:</span>
+                      <span class="amount-label">INTEREST:</span>
                       <span class="amount-value">₹{{ transaction.amount | number:'1.2-2' }}</span>
                     </div>
                     <div *ngIf="transaction.type === 'withdraw'" class="amount-item-mobile withdrawal">
-                      <span class="amount-label">Withdrawal:</span>
+                      <span class="amount-label">WITHDRAWAL:</span>
                       <span class="amount-value">₹{{ transaction.amount | number:'1.2-2' }}</span>
                     </div>
                   </div>
                   <div class="balance-mobile">
-                    <span class="balance-label">Balance:</span>
+                    <span class="balance-label">BALANCE:</span>
                     <span class="balance-value">₹{{ month.balance | number:'1.2-2' }}</span>
                   </div>
                 </div>
