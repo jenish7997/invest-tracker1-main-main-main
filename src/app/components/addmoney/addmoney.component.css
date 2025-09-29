@@ -207,6 +207,7 @@
   .form-select,
   .form-input {
     padding: 0.875rem 1rem;
+    font-size: 16px; /* Prevents zoom on iOS */
   }
 
   .amount-input {
@@ -220,6 +221,57 @@
   .submit-btn {
     padding: 0.875rem 1.5rem;
     font-size: 1rem;
+    min-height: 44px; /* Touch-friendly */
+  }
+}
+
+@media (max-width: 480px) {
+  .add-money-container {
+    padding: 0 0.25rem;
+  }
+
+  .page-title {
+    font-size: 1.75rem;
+  }
+
+  .title-icon {
+    font-size: 1.75rem;
+  }
+
+  .form-card {
+    padding: 1.5rem 1rem;
+  }
+
+  .form-title {
+    font-size: 1.125rem;
+  }
+
+  .form-row {
+    gap: 1rem;
+  }
+
+  .transaction-form {
+    gap: 1rem;
+  }
+
+  .form-select,
+  .form-input {
+    padding: 1rem 0.875rem;
+    font-size: 16px;
+  }
+
+  .amount-input {
+    padding-left: 2rem !important;
+  }
+
+  .currency-symbol {
+    left: 0.875rem;
+  }
+
+  .submit-btn {
+    padding: 1rem 1.25rem;
+    font-size: 1rem;
+    width: 100%;
   }
 }
 

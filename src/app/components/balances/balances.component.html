@@ -110,7 +110,8 @@
           Transaction History
         </h3>
         
-        <div class="table-container">
+        <!-- Desktop Table View -->
+        <div class="table-container desktop-only">
           <table class="transactions-table">
             <thead>
               <tr>
@@ -157,6 +158,50 @@
               </tr>
             </tbody>
           </table>
+        </div>
+
+        <!-- Mobile Card View -->
+        <div class="mobile-cards mobile-only">
+          <div *ngFor="let month of rows" class="month-group-mobile">
+            <div class="month-header-mobile">{{ month.monthKey }}</div>
+            <div class="transactions-mobile">
+              <div *ngFor="let transaction of month.transactions" class="transaction-card-mobile">
+                <div class="card-header-mobile">
+                  <div class="transaction-info-mobile">
+                    <span class="transaction-type-mobile" [ngClass]="transaction.type.toLowerCase()">
+                      {{ transaction.type }}
+                    </span>
+                    <span *ngIf="transaction.type === 'interest'" class="interest-rate-mobile">
+                      ({{ (month.rate * 100) | number:'1.1-1' }}%)
+                    </span>
+                  </div>
+                  <div class="transaction-date-mobile">
+                    {{ transaction.date | date:'dd/MM/yyyy' }}
+                  </div>
+                </div>
+                <div class="card-body-mobile">
+                  <div class="amounts-mobile">
+                    <div *ngIf="transaction.type === 'invest' || transaction.type === 'deposit'" class="amount-item-mobile principal">
+                      <span class="amount-label">Principal:</span>
+                      <span class="amount-value">₹{{ transaction.amount | number:'1.2-2' }}</span>
+                    </div>
+                    <div *ngIf="transaction.type === 'interest'" class="amount-item-mobile interest">
+                      <span class="amount-label">Interest:</span>
+                      <span class="amount-value">₹{{ transaction.amount | number:'1.2-2' }}</span>
+                    </div>
+                    <div *ngIf="transaction.type === 'withdraw'" class="amount-item-mobile withdrawal">
+                      <span class="amount-label">Withdrawal:</span>
+                      <span class="amount-value">₹{{ transaction.amount | number:'1.2-2' }}</span>
+                    </div>
+                  </div>
+                  <div class="balance-mobile">
+                    <span class="balance-label">Balance:</span>
+                    <span class="balance-value">₹{{ month.balance | number:'1.2-2' }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

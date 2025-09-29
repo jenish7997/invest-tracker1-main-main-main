@@ -33,18 +33,19 @@
       </div>
     </div>
 
-    <div class="transactions-section" *ngIf="SelectedInvestorTransection.length">
+    <div class="transactions-section">
       <div class="section-header">
         <h3 class="section-title">
           <span class="material-icons">history</span>
           Investment & Withdrawal Records
         </h3>
-        <div class="transaction-count">
+        <div class="transaction-count" *ngIf="SelectedInvestorTransection.length">
           {{ SelectedInvestorTransection.length }} transaction{{ SelectedInvestorTransection.length !== 1 ? 's' : '' }}
         </div>
       </div>
 
-      <div class="table-container">
+      <!-- Desktop Table View -->
+      <div class="table-container desktop-only" *ngIf="SelectedInvestorTransection.length">
         <table class="transactions-table">
           <thead>
             <tr>
@@ -89,6 +90,41 @@
             </tr>
           </tbody>
         </table>
+      </div>
+
+      <!-- Mobile Card View -->
+      <div class="mobile-cards mobile-only">
+        <!-- Debug info -->
+        <div *ngIf="SelectedInvestorTransection.length === 0" class="debug-info">
+          <p>No transactions found. Count: {{ SelectedInvestorTransection.length }}</p>
+        </div>
+        
+        <div *ngFor="let r of SelectedInvestorTransection; let i = index" class="transaction-card">
+          <div class="card-header">
+            <div class="transaction-type-mobile">
+              <span class="type-badge" [ngClass]="r.type.toLowerCase()">
+                {{ r.type }}
+              </span>
+            </div>
+            <div class="transaction-date-mobile">
+              {{ r.date?.toDate() | date:'shortDate' }}
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="amount-mobile" [ngClass]="r.type === 'invest' || r.type === 'deposit' || r.type === 'interest' ? 'positive' : 'negative'">
+              <span class="amount-symbol">{{ r.type === 'invest' || r.type === 'deposit' || r.type === 'interest' ? '+' : '-' }}</span>
+              ₹{{ r.amount | number:'1.2-2' }}
+            </div>
+          </div>
+          <div class="card-actions">
+            <button 
+              class="delete-btn-mobile" 
+              (click)="deleteTransaction(r)"
+              title="Delete Transaction">
+              <span class="material-icons">delete</span>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
 

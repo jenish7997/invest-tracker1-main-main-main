@@ -424,15 +424,173 @@ td.negative {
   color: #1a237e;
 }
 
+/* Mobile Card Layout */
+.mobile-cards {
+  display: none;
+  padding: 1rem;
+  gap: 1.5rem;
+}
+
+.month-group-mobile {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e9ecef;
+}
+
+.month-header-mobile {
+  background: linear-gradient(135deg, #1a237e, #0d47a1);
+  color: white;
+  padding: 1rem;
+  font-weight: 600;
+  font-size: 1rem;
+  text-align: center;
+}
+
+.transactions-mobile {
+  padding: 0;
+}
+
+.transaction-card-mobile {
+  border-bottom: 1px solid #e9ecef;
+  padding: 1rem;
+  transition: background-color 0.2s ease;
+}
+
+.transaction-card-mobile:last-child {
+  border-bottom: none;
+}
+
+.transaction-card-mobile:hover {
+  background-color: #f8f9fa;
+}
+
+.card-header-mobile {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.75rem;
+}
+
+.transaction-info-mobile {
+  flex: 1;
+}
+
+.transaction-type-mobile {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: capitalize;
+  margin-right: 0.5rem;
+}
+
+.transaction-type-mobile.invest,
+.transaction-type-mobile.deposit {
+  background: #e8f5e8;
+  color: #2e7d32;
+}
+
+.transaction-type-mobile.interest {
+  background: #fff3e0;
+  color: #f57c00;
+}
+
+.transaction-type-mobile.withdraw {
+  background: #ffebee;
+  color: #c62828;
+}
+
+.interest-rate-mobile {
+  color: #6c757d;
+  font-size: 0.7rem;
+  margin-left: 0.25rem;
+}
+
+.transaction-date-mobile {
+  color: #6c757d;
+  font-size: 0.8rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.card-body-mobile {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.amounts-mobile {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.amount-item-mobile {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.25rem 0;
+}
+
+.amount-label {
+  font-size: 0.8rem;
+  color: #6c757d;
+  font-weight: 500;
+}
+
+.amount-value {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.amount-item-mobile.principal .amount-value {
+  color: #2e7d32;
+}
+
+.amount-item-mobile.interest .amount-value {
+  color: #f57c00;
+}
+
+.amount-item-mobile.withdrawal .amount-value {
+  color: #c62828;
+}
+
+.balance-mobile {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-top: 1px solid #e9ecef;
+  margin-top: 0.5rem;
+}
+
+.balance-label {
+  font-size: 0.9rem;
+  color: #495057;
+  font-weight: 600;
+}
+
+.balance-value {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1a237e;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .summary-cards {
     grid-template-columns: 1fr;
+    padding: 1rem;
+    gap: 1rem;
   }
   
   .summary-card {
     flex-direction: column;
     text-align: center;
+    padding: 1rem;
   }
   
   .card-icon {
@@ -442,5 +600,82 @@ td.negative {
   
   .card-content .amount {
     font-size: 1.5rem;
+  }
+
+  /* Hide desktop table on mobile */
+  .desktop-only {
+    display: none;
+  }
+
+  /* Show mobile cards on mobile */
+  .mobile-only {
+    display: block;
+  }
+
+  .mobile-cards {
+    display: flex;
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 480px) {
+  .summary-cards {
+    padding: 0.75rem;
+  }
+  
+  .summary-card {
+    padding: 0.75rem;
+  }
+  
+  .card-icon {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .card-content .amount {
+    font-size: 1.25rem;
+  }
+
+  .mobile-cards {
+    padding: 0.75rem;
+    gap: 1rem;
+  }
+
+  .month-header-mobile {
+    padding: 0.75rem;
+    font-size: 0.9rem;
+  }
+
+  .transaction-card-mobile {
+    padding: 0.75rem;
+  }
+
+  .card-header-mobile {
+    margin-bottom: 0.5rem;
+  }
+
+  .transaction-type-mobile {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.5rem;
+  }
+
+  .transaction-date-mobile {
+    font-size: 0.75rem;
+  }
+
+  .amount-label {
+    font-size: 0.75rem;
+  }
+
+  .amount-value {
+    font-size: 0.85rem;
+  }
+
+  .balance-label {
+    font-size: 0.85rem;
+  }
+
+  .balance-value {
+    font-size: 0.9rem;
   }
 }
