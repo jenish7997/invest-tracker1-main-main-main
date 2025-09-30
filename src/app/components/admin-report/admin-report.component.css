@@ -207,14 +207,40 @@
 }
 
 .investor-name {
-  font-size: 1.8rem;
-  font-weight: 700;
+  font-size: 2.2rem;
+  font-weight: 800;
+  color: #ffffff;
   margin: 0;
-  text-transform: capitalize;
-  letter-spacing: 1px;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  font-family: 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  text-shadow: 
+    0 2px 4px rgba(0, 0, 0, 0.3),
+    0 4px 8px rgba(0, 0, 0, 0.2),
+    0 0 20px rgba(255, 255, 255, 0.1);
   position: relative;
   z-index: 1;
+  background: linear-gradient(45deg, #ffffff, #f0f0f0, #ffffff);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: nameGlow 3s ease-in-out infinite alternate;
+}
+
+@keyframes nameGlow {
+  0% {
+    text-shadow: 
+      0 2px 4px rgba(0, 0, 0, 0.3),
+      0 4px 8px rgba(0, 0, 0, 0.2),
+      0 0 20px rgba(255, 255, 255, 0.1);
+  }
+  100% {
+    text-shadow: 
+      0 2px 4px rgba(0, 0, 0, 0.3),
+      0 4px 8px rgba(0, 0, 0, 0.2),
+      0 0 30px rgba(255, 255, 255, 0.3),
+      0 0 40px rgba(255, 255, 255, 0.2);
+  }
 }
 
 /* Stats Grid */
@@ -674,11 +700,22 @@
   }
   
   .investor-header .investor-name {
-    font-size: 1.5rem;
-    font-weight: 700;
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: #ffffff;
     margin: 0 0 0.5rem 0;
-    text-transform: capitalize;
-    letter-spacing: 1px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-family: 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+    text-shadow: 
+      0 2px 4px rgba(0, 0, 0, 0.3),
+      0 4px 8px rgba(0, 0, 0, 0.2),
+      0 0 20px rgba(255, 255, 255, 0.1);
+    background: linear-gradient(45deg, #ffffff, #f0f0f0, #ffffff);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: nameGlow 3s ease-in-out infinite alternate;
   }
   
   .avg-interest-rate {
@@ -721,55 +758,49 @@
     left: 0;
     right: 0;
     height: 4px;
-    background: linear-gradient(90deg, #ff0000, #ff8000, #ffff00, #00ff00, #0080ff, #8000ff);
+    background: linear-gradient(90deg, #1a237e, #3949ab, #3f51b5, #5c6bc0, #7986cb);
     animation: rainbow-top 2s linear infinite;
   }
   
   @keyframes rainbow-border {
     0% {
-      border-color: #ff0000;
+      border-color: #1a237e;
     }
-    16.66% {
-      border-color: #ff8000;
+    20% {
+      border-color: #3949ab;
     }
-    33.33% {
-      border-color: #ffff00;
+    40% {
+      border-color: #3f51b5;
     }
-    50% {
-      border-color: #00ff00;
+    60% {
+      border-color: #5c6bc0;
     }
-    66.66% {
-      border-color: #0080ff;
-    }
-    83.33% {
-      border-color: #8000ff;
+    80% {
+      border-color: #7986cb;
     }
     100% {
-      border-color: #ff0000;
+      border-color: #1a237e;
     }
   }
   
   @keyframes rainbow-top {
     0% {
-      background: linear-gradient(90deg, #ff0000, #ff8000, #ffff00, #00ff00, #0080ff, #8000ff);
+      background: linear-gradient(90deg, #1a237e, #3949ab, #3f51b5, #5c6bc0, #7986cb);
     }
-    16.66% {
-      background: linear-gradient(90deg, #ff8000, #ffff00, #00ff00, #0080ff, #8000ff, #ff0000);
+    20% {
+      background: linear-gradient(90deg, #3949ab, #3f51b5, #5c6bc0, #7986cb, #1a237e);
     }
-    33.33% {
-      background: linear-gradient(90deg, #ffff00, #00ff00, #0080ff, #8000ff, #ff0000, #ff8000);
+    40% {
+      background: linear-gradient(90deg, #3f51b5, #5c6bc0, #7986cb, #1a237e, #3949ab);
     }
-    50% {
-      background: linear-gradient(90deg, #00ff00, #0080ff, #8000ff, #ff0000, #ff8000, #ffff00);
+    60% {
+      background: linear-gradient(90deg, #5c6bc0, #7986cb, #1a237e, #3949ab, #3f51b5);
     }
-    66.66% {
-      background: linear-gradient(90deg, #0080ff, #8000ff, #ff0000, #ff8000, #ffff00, #00ff00);
-    }
-    83.33% {
-      background: linear-gradient(90deg, #8000ff, #ff0000, #ff8000, #ffff00, #00ff00, #0080ff);
+    80% {
+      background: linear-gradient(90deg, #7986cb, #1a237e, #3949ab, #3f51b5, #5c6bc0);
     }
     100% {
-      background: linear-gradient(90deg, #ff0000, #ff8000, #ffff00, #00ff00, #0080ff, #8000ff);
+      background: linear-gradient(90deg, #1a237e, #3949ab, #3f51b5, #5c6bc0, #7986cb);
     }
   }
   
