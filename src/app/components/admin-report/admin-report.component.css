@@ -1,11 +1,11 @@
-/* Main Container - Desktop First */
+/* Main Container - Modern Clean Design */
 .report-container {
   max-width: 1200px;
   margin: 0 auto;
   padding: 2rem;
-  background-color: #f8f9fa;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
   min-height: 100vh;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-family: 'Inter', 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
 }
 
 /* Report Header */
@@ -247,8 +247,9 @@
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 2rem;
-  padding: 2rem;
+  gap: 1.5rem;
+  padding: 0;
+  margin-bottom: 2rem;
 }
 
 .stat-card {
@@ -256,10 +257,12 @@
   align-items: center;
   gap: 1.5rem;
   padding: 2rem;
-  border-radius: 16px;
-  transition: all 0.3s ease;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.08);
-  border: 2px solid rgba(0, 0, 0, 0.05);
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
 }
@@ -270,14 +273,15 @@
   top: 0;
   left: 0;
   right: 0;
-  height: 4px;
-  background: linear-gradient(90deg, #1a237e, #3949ab, #3f51b5);
+  height: 3px;
+  background: linear-gradient(90deg, #667eea, #764ba2);
+  border-radius: 20px 20px 0 0;
 }
 
 .stat-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18), 0 6px 16px rgba(0, 0, 0, 0.12);
-  border-color: rgba(0, 0, 0, 0.1);
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  background: rgba(255, 255, 255, 1);
 }
 
 .stat-card.principal {
@@ -302,22 +306,24 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, rgba(26, 35, 126, 0.15), rgba(26, 35, 126, 0.05));
-  box-shadow: 0 4px 12px rgba(26, 35, 126, 0.2);
-  border: 2px solid rgba(26, 35, 126, 0.1);
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  font-size: 2.2rem;
+  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3);
+  border: 2px solid rgba(255, 255, 255, 0.2);
   flex-shrink: 0;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .stat-card:hover .stat-icon {
-  transform: scale(1.05);
-  box-shadow: 0 6px 16px rgba(26, 35, 126, 0.3);
+  transform: scale(1.1) rotate(5deg);
+  box-shadow: 0 12px 32px rgba(102, 126, 234, 0.4);
 }
 
 .stat-icon .material-icons {
   font-size: 2.2rem;
-  color: #1a237e;
-  opacity: 0.9;
+  color: white;
+  opacity: 1;
 }
 
 .stat-content {
@@ -385,10 +391,11 @@
 
 .table-container {
   overflow-x: auto;
-  border-radius: 16px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.08);
-  background: white;
-  border: 2px solid rgba(0, 0, 0, 0.05);
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   margin-top: 1rem;
 }
 
@@ -430,17 +437,17 @@
 }
 
 .transactions-table th {
-  background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+  background: linear-gradient(135deg, #667eea, #764ba2);
   padding: 1.5rem 1rem;
   text-align: center;
   font-weight: 700;
-  color: #333;
-  border-bottom: 3px solid #1a237e;
+  color: white;
+  border-bottom: 3px solid rgba(255, 255, 255, 0.2);
   font-size: 1rem;
   text-transform: uppercase;
   letter-spacing: 0.8px;
   white-space: nowrap;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-family: 'Inter', 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
 }
 
 .transactions-table th:first-child {
@@ -453,16 +460,18 @@
 
 .transactions-table td {
   padding: 1.25rem 1rem;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
   font-size: 1rem;
   text-align: center;
   vertical-align: middle;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  transition: background-color 0.2s ease;
+  font-family: 'Inter', 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: rgba(255, 255, 255, 0.8);
 }
 
 .transactions-table tr:hover td {
-  background: linear-gradient(135deg, rgba(26, 35, 126, 0.02), rgba(26, 35, 126, 0.05));
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.05), rgba(118, 75, 162, 0.05));
+  transform: scale(1.01);
 }
 
 .transactions-table td:first-child {
@@ -591,6 +600,7 @@
 }
 
 .principal-row .amount,
+.interest-row .amount,
 .balance-row .amount {
   font-weight: 800;
   font-size: 1.1rem;
@@ -679,7 +689,7 @@
 }
 
 .detail-row.principal .detail-amount {
-  color: #4CAF50;
+  color: #2196F3;
 }
 
 .detail-row.interest .detail-amount {
@@ -709,7 +719,177 @@
   display: none;
 }
 
+/* Very large screens (4K and above) */
+@media (min-width: 1920px) {
+  .report-container {
+    max-width: 1600px;
+    padding: 3rem;
+  }
+  
+  .stats-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2.5rem;
+    padding: 2.5rem;
+  }
+  
+  .stat-card {
+    padding: 2.5rem;
+  }
+  
+  .stat-value {
+    font-size: 2rem;
+  }
+  
+  .stat-content h3 {
+    font-size: 1.2rem;
+  }
+  
+  .investor-name {
+    font-size: 2.5rem;
+  }
+}
+
+/* Large desktop screens */
+@media (min-width: 1440px) and (max-width: 1919px) {
+  .report-container {
+    max-width: 1400px;
+    padding: 2.5rem;
+  }
+  
+  .stats-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+    padding: 2rem;
+  }
+  
+  .stat-card {
+    padding: 2rem;
+  }
+  
+  .stat-value {
+    font-size: 1.6rem;
+  }
+  
+  .stat-content h3 {
+    font-size: 1rem;
+  }
+  
+  .investor-name {
+    font-size: 2.2rem;
+  }
+}
+
+/* Half-screen desktop (split screen) */
+@media (max-width: 1023px) and (min-width: 769px) {
+  .report-container {
+    padding: 1.25rem;
+  }
+  
+  .stats-grid {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.25rem;
+    padding: 1.25rem;
+  }
+  
+  .stat-card {
+    padding: 1.25rem;
+  }
+  
+  .stat-value {
+    font-size: 1.1rem;
+  }
+  
+  .stat-content h3 {
+    font-size: 0.75rem;
+  }
+  
+  .investor-name {
+    font-size: 1.7rem;
+  }
+  
+  .transactions-table th,
+  .transactions-table td {
+    padding: 0.75rem 0.5rem;
+    font-size: 0.8rem;
+  }
+}
+
 /* MOBILE VERSION - New Design (Only for screens smaller than 768px) */
+/* Tablet and medium screen responsive adjustments */
+@media (max-width: 1024px) and (min-width: 768px) {
+  .report-container {
+    padding: 1.5rem;
+  }
+  
+  .stats-grid {
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    padding: 1.5rem;
+  }
+  
+  .stat-card {
+    padding: 1.5rem;
+  }
+  
+  .stat-value {
+    font-size: 1.2rem;
+  }
+  
+  .stat-content h3 {
+    font-size: 0.8rem;
+  }
+  
+  .investor-name {
+    font-size: 1.8rem;
+  }
+  
+  .transactions-table th,
+  .transactions-table td {
+    padding: 1rem 0.75rem;
+    font-size: 0.9rem;
+  }
+}
+
+/* Small tablet responsive adjustments */
+@media (max-width: 768px) and (min-width: 481px) {
+  .report-container {
+    padding: 1rem;
+  }
+  
+  .stats-grid {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    padding: 1rem;
+  }
+  
+  .stat-card {
+    padding: 1.25rem;
+  }
+  
+  .stat-value {
+    font-size: 1.1rem;
+  }
+  
+  .stat-content h3 {
+    font-size: 0.75rem;
+  }
+  
+  .investor-name {
+    font-size: 1.6rem;
+  }
+  
+  .transactions-table th,
+  .transactions-table td {
+    padding: 0.75rem 0.5rem;
+    font-size: 0.85rem;
+  }
+  
+  .table-container {
+    margin: 0 -0.5rem;
+    border-radius: 8px;
+  }
+}
+
 @media (max-width: 767px) {
   .desktop-only {
     display: none;
@@ -1049,7 +1229,7 @@
   }
   
   .detail-row.principal .detail-amount {
-    color: #4CAF50;
+    color: #2196F3;
   }
   
   .detail-row.interest .detail-amount {
