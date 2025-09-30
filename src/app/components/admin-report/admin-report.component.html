@@ -45,14 +45,14 @@
     </ul>
   </div>
 
-
-  <div *ngFor="let report of reports" class="report-card">
+  <!-- DESKTOP VERSION - Original Design -->
+  <div *ngFor="let report of reports" class="report-card desktop-only">
     <div class="report-card-header">
       <h2 class="investor-name">{{ report.investorName }}</h2>
     </div>
 
     <!-- Desktop Stats Grid -->
-    <div class="stats-grid desktop-only">
+    <div class="stats-grid">
       <div class="stat-card principal">
         <div class="stat-icon">
           <span class="material-icons">account_balance</span>
@@ -87,45 +87,11 @@
       </div>
     </div>
 
-    <!-- Mobile Stats Cards - Beautiful Design -->
-    <div class="mobile-stats mobile-only">
-      <div class="mobile-stat-card principal">
-        <div class="mobile-stat-icon">
-          <span class="material-icons">account_balance</span>
-        </div>
-        <div class="mobile-stat-content">
-          <h4>PRINCIPAL AMOUNT</h4>
-          <p class="mobile-stat-value">{{ report.principal | currency:'INR':'symbol':'1.2-2' }}</p>
-        </div>
-      </div>
-      <div class="mobile-stat-card interest">
-        <div class="mobile-stat-icon">
-          <span class="material-icons">trending_up</span>
-        </div>
-        <div class="mobile-stat-content">
-          <h4>TOTAL INTEREST</h4>
-          <p class="mobile-stat-value">{{ report.totalInterest | currency:'INR':'symbol':'1.2-2' }}</p>
-          <div *ngIf="report.monthlyInterestBreakdown.length > 0" class="mobile-average-return">
-            <small>Average Return: {{ (report.averageReturnPercentage * 100).toFixed(2) }}%</small>
-          </div>
-        </div>
-      </div>
-      <div class="mobile-stat-card capital">
-        <div class="mobile-stat-icon">
-          <span class="material-icons">savings</span>
-        </div>
-        <div class="mobile-stat-content">
-          <h4>GROWN CAPITAL</h4>
-          <p class="mobile-stat-value">{{ report.grownCapital | currency:'INR':'symbol':'1.2-2' }}</p>
-        </div>
-      </div>
-    </div>
-
     <div *ngIf="report.transactions.length > 0" class="transactions-section">
       <h3 class="section-title">Transaction History</h3>
       
       <!-- Desktop Table View -->
-      <div class="table-container desktop-only">
+      <div class="table-container">
         <table class="transactions-table">
           <thead>
             <tr>
@@ -162,50 +128,80 @@
           </tbody>
         </table>
       </div>
-
-      <!-- Mobile Card View - Beautiful Design -->
-      <div class="mobile-cards mobile-only">
-        <div *ngFor="let t of report.transactions" class="transaction-card-mobile">
-          <div class="card-header-mobile">
-            <div class="transaction-info-mobile">
-              <span class="transaction-type-mobile" [ngClass]="t.type.toLowerCase()">
-                {{ t.type }}
-              </span>
-              <span *ngIf="t.type === 'interest'" class="interest-rate-mobile">
-                ({{ getTransactionInterestRate(t.date) }})
-              </span>
-            </div>
-            <div class="transaction-date-mobile">
-              {{ formatDate(t.date) }}
-            </div>
-          </div>
-          <div class="card-body-mobile">
-            <div class="amounts-mobile">
-              <div *ngIf="t.type === 'invest' || t.type === 'deposit'" class="amount-item-mobile principal">
-                <span class="amount-label">PRINCIPAL:</span>
-                <span class="amount-value">{{ t.amount | currency:'INR':'symbol':'1.2-2' }}</span>
-              </div>
-              <div *ngIf="t.type === 'interest'" class="amount-item-mobile interest">
-                <span class="amount-label">INTEREST:</span>
-                <span class="amount-value">{{ t.amount | currency:'INR':'symbol':'1.2-2' }}</span>
-              </div>
-              <div *ngIf="t.type === 'withdraw'" class="amount-item-mobile withdrawal">
-                <span class="amount-label">WITHDRAWAL:</span>
-                <span class="amount-value">{{ t.amount | currency:'INR':'symbol':'1.2-2' }}</span>
-              </div>
-            </div>
-            <div class="balance-mobile">
-              <span class="balance-label">BALANCE:</span>
-              <span class="balance-value">{{ t.balance | currency:'INR':'symbol':'1.2-2' }}</span>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
 
     <div *ngIf="report.transactions.length === 0" class="no-transactions">
       <span class="material-icons">receipt_long</span>
       <p>No transactions found for this period.</p>
+    </div>
+  </div>
+
+  <!-- MOBILE VERSION - New Design -->
+  <div *ngFor="let report of reports" class="investment-report mobile-only">
+    <!-- Investor Name Header -->
+    <div class="investor-header">
+      <h2 class="investor-name">{{ report.investorName }}</h2>
+    </div>
+    
+    <!-- Initial Principal, Interest and Balance Card -->
+    <div class="initial-card">
+      <div class="principal-row">
+        <div class="row-left">
+          <span class="material-icons">account_balance</span>
+          <span class="label">PRINCIPAL</span>
+        </div>
+        <span class="amount">{{ report.principal | currency:'INR':'symbol':'1.2-2' }}</span>
+      </div>
+      <div class="interest-row">
+        <div class="interest-left">
+          <div class="row-left">
+            <span class="material-icons">trending_up</span>
+            <span class="label">INTEREST</span>
+          </div>
+          <div class="avg-interest-rate" *ngIf="report.averageReturnPercentage > 0">
+            <span class="rate-label">Avg Rate:</span>
+            <span class="rate-value">{{ (report.averageReturnPercentage * 100).toFixed(2) }}%</span>
+          </div>
+        </div>
+        <span class="amount">{{ report.totalInterest | currency:'INR':'symbol':'1.2-2' }}</span>
+      </div>
+      <div class="balance-row">
+        <div class="row-left">
+          <span class="material-icons">savings</span>
+          <span class="label">BALANCE</span>
+        </div>
+        <span class="amount">{{ report.grownCapital | currency:'INR':'symbol':'1.2-2' }}</span>
+      </div>
+    </div>
+
+    <!-- Transaction Cards -->
+    <div *ngFor="let t of report.transactions" class="transaction-card" [ngClass]="t.type.toLowerCase()">
+      <div class="transaction-header">
+        <span class="transaction-date">{{ formatDate(t.date) }}</span>
+        <span class="transaction-type-badge">
+          {{ t.type.toUpperCase() }}
+        </span>
+      </div>
+      
+      <div class="transaction-details">
+        <div *ngIf="t.type === 'invest' || t.type === 'deposit'" class="detail-row principal">
+          <span class="detail-label">PRINCIPAL</span>
+          <span class="detail-amount">{{ t.amount | currency:'INR':'symbol':'1.2-2' }}</span>
+        </div>
+        <div *ngIf="t.type === 'interest'" class="detail-row interest">
+          <span class="detail-label">INTEREST</span>
+          <span class="detail-amount">{{ t.amount | currency:'INR':'symbol':'1.2-2' }}</span>
+        </div>
+        <div *ngIf="t.type === 'withdraw'" class="detail-row withdrawal">
+          <span class="detail-label">WITHDRAWAL</span>
+          <span class="detail-amount">{{ t.amount | currency:'INR':'symbol':'1.2-2' }}</span>
+        </div>
+        
+        <div class="detail-row balance">
+          <span class="detail-label">BALANCE</span>
+          <span class="detail-amount">{{ t.balance | currency:'INR':'symbol':'1.2-2' }}</span>
+        </div>
+      </div>
     </div>
   </div>
 </div>

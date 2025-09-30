@@ -40,7 +40,8 @@
     </ul>
   </div>
 
-  <div *ngFor="let report of reports" class="report-card">
+  <!-- DESKTOP VERSION - Original Design -->
+  <div *ngFor="let report of reports" class="report-card desktop-only">
     <div class="report-card-header">
       <h2 class="investor-name">{{ report.investorName }}</h2>
     </div>
@@ -124,6 +125,48 @@
     <div *ngIf="report.transactions.length === 0" class="no-transactions">
       <span class="material-icons">receipt_long</span>
       <p>No transactions found for this period.</p>
+    </div>
+  </div>
+
+  <!-- MOBILE VERSION - New Design -->
+  <div *ngFor="let report of reports" class="investment-report mobile-only">
+    <!-- Initial Principal and Balance Card -->
+    <div class="initial-card">
+      <div class="principal-row">
+        <div class="detail-label">PRINCIPAL</div>
+        <div class="detail-amount principal-amount">{{ report.principal | currency:'INR':'symbol':'1.2-2' }}</div>
+      </div>
+      <div class="balance-row">
+        <div class="detail-label">BALANCE</div>
+        <div class="detail-amount balance-amount">{{ report.grownCapital | currency:'INR':'symbol':'1.2-2' }}</div>
+      </div>
+    </div>
+
+    <!-- Transaction Cards -->
+    <div *ngFor="let t of report.transactions" class="transaction-card" [ngClass]="t.type.toLowerCase()">
+      <div class="transaction-header">
+        <div class="transaction-date">{{ formatDate(t.date) }}</div>
+        <div class="transaction-type">{{ t.type }}</div>
+      </div>
+      
+      <div class="transaction-details">
+        <div *ngIf="t.type === 'interest'" class="detail-row">
+          <div class="detail-label">INTEREST</div>
+          <div class="detail-amount interest-amount">{{ t.amount | currency:'INR':'symbol':'1.2-2' }}</div>
+        </div>
+        <div *ngIf="t.type === 'withdraw'" class="detail-row">
+          <div class="detail-label">WITHDRAWAL</div>
+          <div class="detail-amount withdrawal-amount">{{ t.amount | currency:'INR':'symbol':'1.2-2' }}</div>
+        </div>
+        <div *ngIf="t.type === 'invest' || t.type === 'deposit'" class="detail-row">
+          <div class="detail-label">PRINCIPAL</div>
+          <div class="detail-amount principal-amount">{{ t.amount | currency:'INR':'symbol':'1.2-2' }}</div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-label">BALANCE</div>
+          <div class="detail-amount balance-amount">{{ t.balance | currency:'INR':'symbol':'1.2-2' }}</div>
+        </div>
+      </div>
     </div>
   </div>
 

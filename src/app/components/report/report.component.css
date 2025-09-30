@@ -1,9 +1,19 @@
+/* Main Container - Desktop First */
 .report-container {
   max-width: 1200px;
   margin: 0 auto;
   padding: 2rem;
   background-color: #f8f9fa;
   min-height: 100vh;
+}
+
+/* Desktop/Mobile visibility classes */
+.desktop-only {
+  display: block;
+}
+
+.mobile-only {
+  display: none;
 }
 
 .report-header {
@@ -559,4 +569,160 @@
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
+}
+
+/* MOBILE RESPONSIVE DESIGN - Matches Image Exactly */
+@media (max-width: 767px) {
+  .desktop-only {
+    display: none;
+  }
+  
+  .mobile-only {
+    display: block;
+  }
+  
+  .report-container {
+    max-width: 430px;
+    margin: 0 auto;
+    padding: 1rem;
+    background-color: white;
+  }
+  
+  /* Mobile Investment Report Layout */
+  .investment-report {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  /* Initial Principal and Balance Card */
+  .initial-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    margin-bottom: 1rem;
+  }
+  
+  .principal-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background: linear-gradient(135deg, #E3F2FD, #BBDEFB);
+  }
+  
+  .balance-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background: linear-gradient(135deg, #F3E5F5, #E1BEE7);
+  }
+  
+  /* Transaction Cards */
+  .transaction-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    margin-bottom: 1rem;
+  }
+  
+  /* Colored left borders for transaction types */
+  .transaction-card.withdraw {
+    border-left: 4px solid #F44336;
+  }
+  
+  .transaction-card.interest {
+    border-left: 4px solid #4CAF50;
+  }
+  
+  .transaction-card.invest {
+    border-left: 4px solid #FFC107;
+  }
+  
+  .transaction-card.deposit {
+    border-left: 4px solid #FFC107;
+  }
+  
+  /* Transaction Header */
+  .transaction-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-bottom: 1px solid #e9ecef;
+  }
+  
+  .transaction-date {
+    font-weight: 900;
+    color: #000;
+    font-size: 1.1rem;
+  }
+  
+  .transaction-type {
+    font-weight: 900;
+    color: #000;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+  }
+  
+  /* Transaction Details */
+  .transaction-details {
+    padding: 0;
+  }
+  
+  .detail-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+  }
+  
+  .detail-row:nth-child(1) {
+    background: linear-gradient(135deg, #E8F5E8, #C8E6C9);
+  }
+  
+  .detail-row:nth-child(2) {
+    background: linear-gradient(135deg, #FFEBEE, #FFCDD2);
+  }
+  
+  .detail-row:nth-child(3) {
+    background: linear-gradient(135deg, #F3E5F5, #E1BEE7);
+  }
+  
+  .detail-row:nth-child(4) {
+    background: linear-gradient(135deg, #E3F2FD, #BBDEFB);
+  }
+  
+  .detail-label {
+    font-weight: 900;
+    color: #000;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+  }
+  
+  .detail-amount {
+    font-weight: 800;
+    font-size: 1.1rem;
+    font-family: 'Courier New', monospace;
+  }
+  
+  .principal-amount {
+    color: #4CAF50;
+  }
+  
+  .interest-amount {
+    color: #4CAF50;
+  }
+  
+  .withdrawal-amount {
+    color: #F44336;
+  }
+  
+  .balance-amount {
+    color: #9C27B0;
+  }
 }
