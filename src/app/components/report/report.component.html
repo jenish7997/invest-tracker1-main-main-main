@@ -130,15 +130,39 @@
 
   <!-- MOBILE VERSION - New Design -->
   <div *ngFor="let report of reports" class="investment-report mobile-only">
-    <!-- Initial Principal and Balance Card -->
+    <!-- Investor Header -->
+    <div class="investor-header">
+      <h2 class="investor-name">{{ report.investorName }}</h2>
+    </div>
+    
+    <!-- Initial Principal, Interest and Balance Card -->
     <div class="initial-card">
       <div class="principal-row">
-        <div class="detail-label">PRINCIPAL</div>
-        <div class="detail-amount principal-amount">{{ report.principal | currency:'INR':'symbol':'1.2-2' }}</div>
+        <div class="row-left">
+          <span class="material-icons">account_balance</span>
+          <span class="label">PRINCIPAL</span>
+        </div>
+        <span class="amount">{{ report.principal | currency:'INR':'symbol':'1.2-2' }}</span>
+      </div>
+      <div class="interest-row">
+        <div class="interest-left">
+          <div class="row-left">
+            <span class="material-icons">trending_up</span>
+            <span class="label">INTEREST</span>
+          </div>
+          <div class="avg-interest-rate" *ngIf="report.averageReturnPercentage > 0">
+            <span class="rate-label">Avg Rate:</span>
+            <span class="rate-value">{{ (report.averageReturnPercentage * 100).toFixed(2) }}%</span>
+          </div>
+        </div>
+        <span class="amount">{{ report.totalInterest | currency:'INR':'symbol':'1.2-2' }}</span>
       </div>
       <div class="balance-row">
-        <div class="detail-label">BALANCE</div>
-        <div class="detail-amount balance-amount">{{ report.grownCapital | currency:'INR':'symbol':'1.2-2' }}</div>
+        <div class="row-left">
+          <span class="material-icons">savings</span>
+          <span class="label">BALANCE</span>
+        </div>
+        <span class="amount">{{ report.grownCapital | currency:'INR':'symbol':'1.2-2' }}</span>
       </div>
     </div>
 
@@ -150,19 +174,19 @@
       </div>
       
       <div class="transaction-details">
-        <div *ngIf="t.type === 'interest'" class="detail-row">
+        <div *ngIf="t.type === 'interest'" class="detail-row interest">
           <div class="detail-label">INTEREST</div>
           <div class="detail-amount interest-amount">{{ t.amount | currency:'INR':'symbol':'1.2-2' }}</div>
         </div>
-        <div *ngIf="t.type === 'withdraw'" class="detail-row">
+        <div *ngIf="t.type === 'withdraw'" class="detail-row withdrawal">
           <div class="detail-label">WITHDRAWAL</div>
           <div class="detail-amount withdrawal-amount">{{ t.amount | currency:'INR':'symbol':'1.2-2' }}</div>
         </div>
-        <div *ngIf="t.type === 'invest' || t.type === 'deposit'" class="detail-row">
+        <div *ngIf="t.type === 'invest' || t.type === 'deposit'" class="detail-row principal">
           <div class="detail-label">PRINCIPAL</div>
           <div class="detail-amount principal-amount">{{ t.amount | currency:'INR':'symbol':'1.2-2' }}</div>
         </div>
-        <div class="detail-row">
+        <div class="detail-row balance">
           <div class="detail-label">BALANCE</div>
           <div class="detail-amount balance-amount">{{ t.balance | currency:'INR':'symbol':'1.2-2' }}</div>
         </div>

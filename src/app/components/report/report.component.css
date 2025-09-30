@@ -243,22 +243,38 @@
 /* Stats Grid */
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 2rem;
   padding: 2rem;
 }
 
 .stat-card {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  padding: 1.5rem;
-  border-radius: 12px;
-  transition: transform 0.3s ease;
+  gap: 1.5rem;
+  padding: 2rem;
+  border-radius: 16px;
+  transition: all 0.3s ease;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.08);
+  border: 2px solid rgba(0, 0, 0, 0.05);
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #1a237e, #3949ab, #3f51b5);
 }
 
 .stat-card:hover {
-  transform: translateY(-2px);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18), 0 6px 16px rgba(0, 0, 0, 0.12);
+  border-color: rgba(0, 0, 0, 0.1);
 }
 
 .stat-card.principal {
@@ -277,35 +293,61 @@
 }
 
 .stat-icon {
-  width: 50px;
-  height: 50px;
+  width: 70px;
+  height: 70px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.8);
+  background: linear-gradient(135deg, rgba(26, 35, 126, 0.15), rgba(26, 35, 126, 0.05));
+  box-shadow: 0 4px 12px rgba(26, 35, 126, 0.2);
+  border: 2px solid rgba(26, 35, 126, 0.1);
   flex-shrink: 0;
+  transition: all 0.3s ease;
+}
+
+.stat-card:hover .stat-icon {
+  transform: scale(1.05);
+  box-shadow: 0 6px 16px rgba(26, 35, 126, 0.3);
 }
 
 .stat-icon .material-icons {
-  font-size: 1.5rem;
+  font-size: 2.2rem;
   color: #1a237e;
+  opacity: 0.9;
+}
+
+.stat-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .stat-content h3 {
   font-size: 0.9rem;
-  font-weight: 600;
-  color: #495057;
-  margin: 0 0 0.25rem 0;
+  font-weight: 700;
+  color: #333;
+  margin: 0 0 0.5rem 0;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.8px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 .stat-value {
-  font-size: 1.5rem;
-  font-weight: 700;
+  font-size: 1.4rem;
+  font-weight: 800;
   color: #1a237e;
   margin: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  letter-spacing: 0.5px;
+  text-align: right;
+  line-height: 1.2;
+  vertical-align: baseline;
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .average-return {
@@ -349,9 +391,11 @@
 
 .table-container {
   overflow-x: auto;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.08);
   background: white;
+  border: 2px solid rgba(0, 0, 0, 0.05);
+  margin-top: 1rem;
 }
 
 /* Responsive adjustments */
@@ -410,16 +454,17 @@
 }
 
 .transactions-table th {
-  background: #f8f9fa;
-  padding: 1rem;
+  background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+  padding: 1.5rem 1rem;
   text-align: center;
-  font-weight: 600;
-  color: #1a237e;
-  border-bottom: 2px solid #e9ecef;
-  font-size: 0.9rem;
+  font-weight: 700;
+  color: #333;
+  border-bottom: 3px solid #1a237e;
+  font-size: 1rem;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.8px;
   white-space: nowrap;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 .transactions-table th:first-child {
@@ -431,11 +476,17 @@
 }
 
 .transactions-table td {
-  padding: 1rem;
-  border-bottom: 1px solid #e9ecef;
-  font-size: 0.95rem;
+  padding: 1.25rem 1rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  font-size: 1rem;
   text-align: center;
   vertical-align: middle;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  transition: background-color 0.2s ease;
+}
+
+.transactions-table tr:hover td {
+  background: linear-gradient(135deg, rgba(26, 35, 126, 0.02), rgba(26, 35, 126, 0.05));
 }
 
 .transactions-table td:first-child {
@@ -595,56 +646,232 @@
     gap: 1rem;
   }
   
-  /* Initial Principal and Balance Card */
+  /* Investor Header */
+  .investor-header {
+    text-align: center;
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background: linear-gradient(135deg, #1a237e, #3949ab);
+    border-radius: 16px;
+    box-shadow: 0 8px 24px rgba(26, 35, 126, 0.3);
+  }
+  
+  .investor-header .investor-name {
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: #ffffff;
+    margin: 0 0 0.5rem 0;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-family: 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+    text-shadow: 
+      0 2px 4px rgba(0, 0, 0, 0.3),
+      0 4px 8px rgba(0, 0, 0, 0.2),
+      0 0 20px rgba(255, 255, 255, 0.1);
+    background: linear-gradient(45deg, #ffffff, #f0f0f0, #ffffff);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: nameGlow 3s ease-in-out infinite alternate;
+  }
+  
+  @keyframes nameGlow {
+    0% {
+      text-shadow: 
+        0 2px 4px rgba(0, 0, 0, 0.3),
+        0 4px 8px rgba(0, 0, 0, 0.2),
+        0 0 20px rgba(255, 255, 255, 0.1);
+    }
+    100% {
+      text-shadow: 
+        0 2px 4px rgba(0, 0, 0, 0.3),
+        0 4px 8px rgba(0, 0, 0, 0.2),
+        0 0 30px rgba(255, 255, 255, 0.3),
+        0 0 40px rgba(255, 255, 255, 0.2);
+    }
+  }
+  
+  /* Initial Principal, Interest and Balance Card */
   .initial-card {
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    background: linear-gradient(135deg, #ffffff, #f8f9fa);
+    border-radius: 16px;
+    margin-bottom: 1.5rem;
     overflow: hidden;
-    margin-bottom: 1rem;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.08);
+    border: 3px solid transparent;
+    position: relative;
+    animation: rainbow-border 3s linear infinite;
+  }
+  
+  .initial-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #1a237e, #3949ab, #3f51b5, #5c6bc0, #7986cb);
+    animation: rainbow-top 2s linear infinite;
+  }
+  
+  @keyframes rainbow-border {
+    0% {
+      border-color: #1a237e;
+    }
+    20% {
+      border-color: #3949ab;
+    }
+    40% {
+      border-color: #3f51b5;
+    }
+    60% {
+      border-color: #5c6bc0;
+    }
+    80% {
+      border-color: #7986cb;
+    }
+    100% {
+      border-color: #1a237e;
+    }
+  }
+  
+  @keyframes rainbow-top {
+    0% {
+      background: linear-gradient(90deg, #1a237e, #3949ab, #3f51b5, #5c6bc0, #7986cb);
+    }
+    20% {
+      background: linear-gradient(90deg, #3949ab, #3f51b5, #5c6bc0, #7986cb, #1a237e);
+    }
+    40% {
+      background: linear-gradient(90deg, #3f51b5, #5c6bc0, #7986cb, #1a237e, #3949ab);
+    }
+    60% {
+      background: linear-gradient(90deg, #5c6bc0, #7986cb, #1a237e, #3949ab, #3f51b5);
+    }
+    80% {
+      background: linear-gradient(90deg, #7986cb, #1a237e, #3949ab, #3f51b5, #5c6bc0);
+    }
+    100% {
+      background: linear-gradient(90deg, #1a237e, #3949ab, #3f51b5, #5c6bc0, #7986cb);
+    }
   }
   
   .principal-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1rem;
+    padding: 1.5rem;
     background: linear-gradient(135deg, #E3F2FD, #BBDEFB);
+    color: #333;
+    border-bottom: 1px solid rgba(33, 150, 243, 0.2);
+    position: relative;
+  }
+  
+  .interest-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, #E8F5E8, #C8E6C9);
+    color: #333;
+    border-top: 1px solid rgba(76, 175, 80, 0.2);
+    border-bottom: 1px solid rgba(76, 175, 80, 0.2);
+    position: relative;
+  }
+  
+  .interest-left {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  
+  .avg-interest-rate {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+  }
+  
+  .rate-label {
+    color: #555;
+    font-weight: 500;
+  }
+  
+  .rate-value {
+    color: #4CAF50;
+    font-weight: 700;
+    background: rgba(76, 175, 80, 0.1);
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
   }
   
   .balance-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1rem;
+    padding: 1.5rem;
     background: linear-gradient(135deg, #F3E5F5, #E1BEE7);
+    color: #333;
+    border-top: 1px solid rgba(156, 39, 176, 0.2);
+    position: relative;
+  }
+  
+  .row-left {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  
+  .row-left .material-icons {
+    font-size: 1.5rem;
+    color: #1a237e;
+    opacity: 0.8;
+  }
+  
+  .principal-row .label,
+  .interest-row .label,
+  .balance-row .label {
+    font-weight: 600;
+    font-size: 1.1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #333;
+  }
+  
+  .principal-row .amount,
+  .interest-row .amount,
+  .balance-row .amount {
+    font-weight: 700;
+    font-size: 1.3rem;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: #333;
+    letter-spacing: 0.5px;
+  }
+  
+  /* Make interest amount more prominent */
+  .interest-row .amount {
+    color: #4CAF50;
+    font-weight: 900;
   }
   
   /* Transaction Cards */
   .transaction-card {
     background: white;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 16px;
+    margin-bottom: 1.5rem;
     overflow: hidden;
-    margin-bottom: 1rem;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15), 0 2px 8px rgba(0, 0, 0, 0.1);
+    position: relative;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
   }
   
-  /* Colored left borders for transaction types */
-  .transaction-card.withdraw {
-    border-left: 4px solid #F44336;
+  .transaction-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
   }
   
-  .transaction-card.interest {
-    border-left: 4px solid #4CAF50;
-  }
-  
-  .transaction-card.invest {
-    border-left: 4px solid #FFC107;
-  }
-  
-  .transaction-card.deposit {
-    border-left: 4px solid #FFC107;
-  }
+  /* Transaction card styling without colored borders */
   
   /* Transaction Header */
   .transaction-header {
@@ -654,19 +881,47 @@
     padding: 1rem;
     background: #f8f9fa;
     border-bottom: 1px solid #e9ecef;
+    position: relative;
+  }
+  
+  .transaction-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+  }
+  
+  .transaction-card.withdraw .transaction-header::before {
+    background: #F44336;
+  }
+  
+  .transaction-card.interest .transaction-header::before {
+    background: #4CAF50;
+  }
+  
+  .transaction-card.invest .transaction-header::before,
+  .transaction-card.deposit .transaction-header::before {
+    background: #2196F3;
   }
   
   .transaction-date {
-    font-weight: 900;
-    color: #000;
+    font-weight: 700;
     font-size: 1.1rem;
+    color: #1A237E;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   }
   
   .transaction-type {
-    font-weight: 900;
-    color: #000;
-    font-size: 0.9rem;
+    font-weight: 400;
+    font-size: 0.8rem;
     text-transform: uppercase;
+    color: #666;
+    background: #f5f5f5;
+    padding: 0.25rem 0.5rem;
+    border-radius: 6px;
+    border: 1px solid #e0e0e0;
   }
   
   /* Transaction Details */
@@ -678,36 +933,76 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1rem;
+    padding: 1.25rem;
+    margin: 0.75rem;
+    border-radius: 12px;
+    color: #333;
+    font-weight: 700;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12), 0 2px 4px rgba(0, 0, 0, 0.08);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease;
+  }
+  
+  .detail-row:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
   }
   
   .detail-row:nth-child(1) {
-    background: linear-gradient(135deg, #E8F5E8, #C8E6C9);
+    background: #E8F5E8;
+    border-left: 4px solid #4CAF50;
   }
   
   .detail-row:nth-child(2) {
-    background: linear-gradient(135deg, #FFEBEE, #FFCDD2);
+    background: #FFEBEE;
+    border-left: 4px solid #F44336;
   }
   
   .detail-row:nth-child(3) {
-    background: linear-gradient(135deg, #F3E5F5, #E1BEE7);
+    background: #F3E5F5;
+    border-left: 4px solid #9C27B0;
   }
   
   .detail-row:nth-child(4) {
-    background: linear-gradient(135deg, #E3F2FD, #BBDEFB);
+    background: #E3F2FD;
+    border-left: 4px solid #2196F3;
+  }
+  
+  /* Specific row type styling */
+  .detail-row.principal {
+    background: #E3F2FD;
+    border-left: 4px solid #2196F3;
+  }
+  
+  .detail-row.balance {
+    background: #F3E5F5;
+    border-left: 4px solid #9C27B0;
+  }
+  
+  .detail-row.withdrawal {
+    background: #FFEBEE;
+    border-left: 4px solid #F44336;
+  }
+  
+  .detail-row.interest {
+    background: #E8F5E8;
+    border-left: 4px solid #4CAF50;
   }
   
   .detail-label {
-    font-weight: 900;
-    color: #000;
     font-size: 0.9rem;
     text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #555;
+    font-weight: 600;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   }
   
   .detail-amount {
-    font-weight: 800;
     font-size: 1.1rem;
-    font-family: 'Courier New', monospace;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-weight: 700;
+    letter-spacing: 0.5px;
   }
   
   .principal-amount {
