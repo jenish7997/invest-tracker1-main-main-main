@@ -3,8 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { InvestmentService } from '../../services/investment.service';
 import { AuthService } from '../../services/auth.service';
-import { AdminService } from '../../services/admin.service';
-import { Investor, Transaction } from '../../models';
+import { Investor } from '../../models';
 
 @Component({
   selector: 'app-admin',
@@ -15,13 +14,11 @@ import { Investor, Transaction } from '../../models';
 })
 export class AdminComponent implements OnInit {
   investors: Investor[] = [];
-  transactions: Transaction[] = [];
   isDeleting = false;
 
   constructor(
     private svc: InvestmentService,
-    private authService: AuthService,
-    private adminService: AdminService
+    private authService: AuthService
   ) {}
 
   ngOnInit(): void {
@@ -29,9 +26,7 @@ export class AdminComponent implements OnInit {
   }
 
   loadInvestors(): void {
-    console.log('[DEBUG] loadInvestors called');
     this.svc.listInvestors().subscribe(data => {
-      console.log('[DEBUG] Investors loaded in admin:', data);
       this.investors = data;
     });
   }
@@ -54,12 +49,7 @@ export class AdminComponent implements OnInit {
     this.isDeleting = true;
     
     try {
-      // Note: Investor deletion functionality has been removed
-      // Investors can only be managed through Firebase Console
-      console.log('Investor deletion is disabled. Please use Firebase Console to manage investors.');
       alert('Investor deletion is disabled. Please use Firebase Console to manage investors.');
-    } catch (error) {
-      console.error('Error deleting investor:', error);
     } finally {
       this.isDeleting = false;
     }

@@ -31,9 +31,8 @@ export class LoginComponent {
     if (this.loginForm.valid) {
       const { email, password } = this.loginForm.value;
       this.authService.login(email, password)
-        .catch(err => {
+        .catch(() => {
           this.errorMessage = 'Invalid email or password.';
-          console.error('Login error:', err);
         });
     }
   }

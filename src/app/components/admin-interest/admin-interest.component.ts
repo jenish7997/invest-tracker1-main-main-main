@@ -53,10 +53,6 @@ export class AdminInterestComponent implements OnInit {
     // Convert percentage to decimal (e.g., 12 -> 0.12)
     const decimalRate = rate / 100;
 
-    console.log(`[ADMIN-INTEREST] 🔥 APPLYING ADMIN RATE: ${monthKey} = ${rate}% (${decimalRate} decimal)`);
-    console.log(`[ADMIN-INTEREST] 🔥 Calling Firebase function: applyAdminMonthlyInterestAndRecalculate`);
-    console.log(`[ADMIN-INTEREST] 🔥 This should ONLY write to adminRates collection, NOT rates collection!`);
-
     const applyInterestFn = httpsCallable(this.functions, 'applyAdminMonthlyInterestAndRecalculate');
 
     try {
@@ -73,7 +69,6 @@ export class AdminInterestComponent implements OnInit {
 
     } catch (error: any) {
       this.errorMessage = error.message || 'Error applying interest. Please try again.';
-      console.error('Error applying interest:', error);
     } finally {
       this.loading = false;
     }
@@ -133,7 +128,6 @@ export class AdminInterestComponent implements OnInit {
 
     } catch (error: any) {
       this.errorMessage = error.message || 'Error updating interest rate. Please try again.';
-      console.error('Error updating interest rate:', error);
     } finally {
       this.loading = false;
     }
@@ -149,12 +143,9 @@ export class AdminInterestComponent implements OnInit {
     this.clearMessages();
 
     try {
-      console.log('[ADMIN-INTEREST] 🗑️ Clearing all admin rates...');
-      
       // Delete all rates one by one
       for (const rate of this.rates) {
         await this.adminInterestSvc.deleteAdminRate(rate.monthKey);
-        console.log(`[ADMIN-INTEREST] 🗑️ Deleted rate for ${rate.monthKey}`);
       }
 
       this.successMessage = `Successfully cleared ${this.rates.length} admin interest rates.`;
@@ -166,7 +157,6 @@ export class AdminInterestComponent implements OnInit {
 
     } catch (error: any) {
       this.errorMessage = error.message || 'Error clearing admin rates. Please try again.';
-      console.error('Error clearing admin rates:', error);
     } finally {
       this.loading = false;
     }
@@ -182,8 +172,6 @@ export class AdminInterestComponent implements OnInit {
     this.clearMessages();
 
     try {
-      console.log('[ADMIN-INTEREST] 📊 Adding sample admin rates...');
-      
       // Sample data for 2024 and 2025
       const sampleRates = [
         { monthKey: '2024-01', rate: 0.12 }, // 12%
@@ -215,7 +203,6 @@ export class AdminInterestComponent implements OnInit {
       // Add each sample rate
       for (const sampleRate of sampleRates) {
         await this.adminInterestSvc.setAdminMonthlyRate(sampleRate);
-        console.log(`[ADMIN-INTEREST] 📊 Added sample rate: ${sampleRate.monthKey} = ${(sampleRate.rate * 100).toFixed(1)}%`);
       }
 
       this.successMessage = `Successfully added ${sampleRates.length} sample admin interest rates!`;
@@ -227,7 +214,6 @@ export class AdminInterestComponent implements OnInit {
 
     } catch (error: any) {
       this.errorMessage = error.message || 'Error adding sample rates. Please try again.';
-      console.error('Error adding sample rates:', error);
     } finally {
       this.loading = false;
     }

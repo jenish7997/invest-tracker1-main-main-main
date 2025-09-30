@@ -28,7 +28,7 @@ export class RegisterComponent {
         await this.authService.register(email!, password!);
         this.router.navigate(['/admin']);
       } catch (error) {
-        console.error('Registration failed:', error);
+        // Registration failed
       }
     }
   }

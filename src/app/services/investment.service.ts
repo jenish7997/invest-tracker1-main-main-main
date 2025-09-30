@@ -26,8 +26,6 @@ export class InvestmentService {
   }
 
   async computeBalances(investorId: string, startMonthKey?: string, endMonthKey?: string): Promise<any[]> {
-    console.log(`[DEBUG] computeBalances called for investorId: ${investorId}`);
-    
     const transactionsCollection = collection(this.firestore, 'transactions');
     
     // First, get all transactions for the investor
@@ -39,7 +37,6 @@ export class InvestmentService {
     const q = query(collection(this.firestore, 'transactions'), ...constraints);
     
     const querySnapshot = await getDocs(q);
-    console.log(`[DEBUG] Found ${querySnapshot.docs.length} transactions for investor ${investorId}`);
     
     const allTransactions = querySnapshot.docs.map(doc => {
       const data = doc.data() as Transaction;
@@ -50,13 +47,6 @@ export class InvestmentService {
       };
     });
 
-    console.log(`[DEBUG] Mapped transactions:`, allTransactions.map(t => ({
-      type: t.type,
-      amount: t.amount,
-      date: t.date,
-      createdAt: t.createdAt
-    })));
-
     // Sort by date first, then by createdAt for same-day transactions
     allTransactions.sort((a, b) => {
       const dateCompare = a.date.getTime() - b.date.getTime();
@@ -65,13 +55,6 @@ export class InvestmentService {
       }
       return dateCompare;
     });
-
-    console.log(`[DEBUG] Sorted transactions:`, allTransactions.map(t => ({
-      type: t.type,
-      amount: t.amount,
-      date: t.date,
-      createdAt: t.createdAt
-    })));
 
     const startDate = startMonthKey ? new Date(startMonthKey + '-01') : null;
     const endDate = endMonthKey ? new Date(endMonthKey + '-28') : null;
@@ -84,7 +67,6 @@ export class InvestmentService {
     });
 
     let balance = 0;
-    console.log(`[DEBUG] Processing ${filteredTransactions.length} filtered transactions`);
     
     const runningBalances = filteredTransactions.map((t, index) => {
       const oldBalance = balance;
@@ -94,21 +76,12 @@ export class InvestmentService {
         balance -= t.amount;
       }
       
-      console.log(`[DEBUG] Transaction ${index + 1}: ${t.type} ${t.amount} | Balance: ${oldBalance} -> ${balance}`);
-      
       return {
         ...t,
         balance: balance,
         date: this.formatDateForDisplay(t.date)
       };
     });
-    
-    console.log(`[DEBUG] Final running balances:`, runningBalances.map(t => ({
-      type: t.type,
-      amount: t.amount,
-      balance: t.balance,
-      date: t.date
-    })));
     
     return runningBalances;
   }

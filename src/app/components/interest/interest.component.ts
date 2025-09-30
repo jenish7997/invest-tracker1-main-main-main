@@ -42,12 +42,11 @@ export class InterestComponent implements OnInit {
 
   private loadRates() {
     this.userInterestSvc.listUserRates().subscribe({
-      next: (r) => {
+        next: (r) => {
         this.rates = r.sort((a, b) => a.monthKey.localeCompare(b.monthKey));
       },
-      error: (error) => {
-        console.error('Error loading user rates:', error);
-        this.errorMessage = 'Error loading interest rates. Please try again.';
+      error: () => {
+        this.errorMessage = 'Error loading interest rates. Please try again.'
       }
     });
   }
@@ -81,7 +80,6 @@ export class InterestComponent implements OnInit {
 
     } catch (error: any) {
       this.errorMessage = error.message || 'Error applying interest. Please try again.';
-      console.error('Error applying interest:', error);
     } finally {
       this.loading = false;
     }
@@ -142,7 +140,6 @@ export class InterestComponent implements OnInit {
 
     } catch (error: any) {
       this.errorMessage = error.message || 'Error updating interest rate. Please try again.';
-      console.error('Error updating interest rate:', error);
     } finally {
       this.loading = false;
     }

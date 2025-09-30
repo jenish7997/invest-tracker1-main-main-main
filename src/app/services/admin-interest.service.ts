@@ -11,7 +11,6 @@ export class AdminInterestService {
 
   // Admin-specific interest rates collection
   listAdminRates(): Observable<MonthlyRate[]> {
-    console.log('[ADMIN-INTEREST-SERVICE] 🏛️ Fetching ADMIN rates from ADMINRATES collection');
     const ratesCollection = collection(this.firestore, 'adminRates');
     return collectionData(ratesCollection, { idField: 'id' }) as Observable<MonthlyRate[]>;
   }

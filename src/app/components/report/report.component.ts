@@ -1,4 +1,3 @@
-
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { InvestmentService } from '../../services/investment.service';
@@ -49,18 +48,9 @@ export class ReportComponent implements OnInit, OnDestroy {
   ) { }
 
   ngOnInit() {
-    console.log('[DEBUG] Report component ngOnInit called');
-    
     // Subscribe to user interest rate changes (using original rates collection)
-    console.log('[USER-REPORT] Subscribing to USER rates from rates collection...');
     this.ratesSubscription = this.userInterestService.listUserRates().subscribe({
       next: (rates) => {
-        console.log('[USER-REPORT] ⚠️ USER interest rates updated from RATES collection:', rates);
-        console.log('[USER-REPORT] ⚠️ This should ONLY contain user rates, NOT admin rates!');
-        rates.forEach(rate => {
-          console.log(`[USER-REPORT] ⚠️ Found rate: ${rate.monthKey} = ${(rate.rate * 100).toFixed(2)}%`);
-        });
-        
         this.interestRates.clear();
         rates.forEach(rate => {
           this.interestRates.set(rate.monthKey, rate.rate);
@@ -69,12 +59,10 @@ export class ReportComponent implements OnInit, OnDestroy {
         
         // Only refresh reports if user is already loaded
         if (this.currentUser) {
-          console.log('[DEBUG] Refreshing reports due to user rate change');
           this.refreshReports();
         }
       },
       error: (error) => {
-        console.error('[DEBUG] Error loading user interest rates:', error);
         this.logger.error('Error loading user interest rates', error);
         this.error = 'Error loading user interest rates. Please try refreshing the page.';
         this.loading = false;
@@ -83,7 +71,6 @@ export class ReportComponent implements OnInit, OnDestroy {
 
     // Subscribe to user changes
     this.userSubscription = this.authService.currentUser$.subscribe(user => {
-      console.log('[DEBUG] User state changed:', user);
       if (user) {
         this.currentUser = user; // Store current user info
         this.isAdmin = user.isAdmin;
@@ -91,14 +78,12 @@ export class ReportComponent implements OnInit, OnDestroy {
         this.error = '';
         this.reports = []; // Clear existing reports to prevent duplicates
         
-        console.log('[DEBUG] User authenticated, loading reports. isAdmin:', this.isAdmin);
         // Load reports after user is authenticated
         this.refreshReports();
       } else {
         this.currentUser = null;
         this.loading = false;
         this.error = 'User not authenticated';
-        console.log('[DEBUG] User not authenticated');
       }
     });
   }
@@ -113,19 +98,14 @@ export class ReportComponent implements OnInit, OnDestroy {
   }
 
   private refreshReports() {
-    console.log('[DEBUG] refreshReports called. isAdmin:', this.isAdmin, 'currentUser:', this.currentUser);
     if (this.isAdmin) {
-      console.log('[DEBUG] Loading all investors reports');
       this.loadAllInvestorsReports();
     } else {
       // For non-admin users, we need to get the current user info
       // This is a bit tricky since we're already in a user subscription
       // We'll store the current user info to use here
       if (this.currentUser) {
-        console.log('[DEBUG] Loading user report for:', this.currentUser.displayName);
         this.loadUserReport(this.currentUser.uid, this.currentUser.displayName);
-      } else {
-        console.log('[DEBUG] No current user, cannot load reports');
       }
     }
   }
@@ -133,10 +113,8 @@ export class ReportComponent implements OnInit, OnDestroy {
 
 
   loadAllInvestorsReports() {
-    console.log('[DEBUG] loadAllInvestorsReports called');
     this.investmentService.listInvestors().subscribe({
       next: (investors) => {
-        console.log('[DEBUG] Investors loaded:', investors);
         this.logger.debug('Investors loaded', investors);
         if (investors.length === 0) {
           this.loading = false;
@@ -145,16 +123,12 @@ export class ReportComponent implements OnInit, OnDestroy {
         
         let reportsGenerated = 0;
         investors.forEach(investor => {
-          console.log(`[DEBUG] Generating report for investor: ${investor.name} (${investor.id})`);
           this.generateReport(investor.id, investor.name).then(() => {
             reportsGenerated++;
-            console.log(`[DEBUG] Report generated for ${investor.name}. Total: ${reportsGenerated}/${investors.length}`);
             if (reportsGenerated === investors.length) {
-              console.log('[DEBUG] All reports generated. Setting loading to false.');
               this.loading = false;
             }
           }).catch(error => {
-            console.error(`[DEBUG] Error generating report for ${investor.name}:`, error);
             this.logger.error('Error generating report for investor', error);
             this.error = 'Error loading investor data';
             this.loading = false;
@@ -162,7 +136,6 @@ export class ReportComponent implements OnInit, OnDestroy {
         });
       },
       error: (error) => {
-        console.error('[DEBUG] Error loading investors:', error);
         this.logger.error('Error loading investors', error);
         this.error = 'Error loading investors from database';
         this.loading = false;
@@ -186,18 +159,14 @@ export class ReportComponent implements OnInit, OnDestroy {
 
   async generateReport(investorId: string, investorName: string): Promise<void> {
     try {
-      console.log(`[DEBUG] generateReport called for ${investorName} (${investorId})`);
       // Use the same method as admin report to get raw transactions
       const rawTransactions = await this.investmentService.getTransactionsByInvestor(investorId);
-      console.log(`[DEBUG] Retrieved ${rawTransactions.length} raw transactions for ${investorName}:`, rawTransactions);
       
       // Filter out existing interest transactions to prevent duplicates
       const nonInterestTransactions = rawTransactions.filter(t => t.type !== 'interest');
-      console.log(`[DEBUG] Filtered to ${nonInterestTransactions.length} non-interest transactions`);
       
       // Recalculate interest using user rates to ensure accuracy
       const transactions = this.calculateInterestUsingUserRates(nonInterestTransactions);
-      console.log(`[DEBUG] Calculated interest using user rates:`, transactions);
       
       this.logger.logFinancialData(`Transactions for ${investorName}`, transactions);
       
@@ -239,19 +208,7 @@ export class ReportComponent implements OnInit, OnDestroy {
         ? monthlyInterestBreakdown.reduce((sum, monthly) => sum + monthly.rate, 0) / monthlyInterestBreakdown.length
         : 0;
 
-      console.log(`[DEBUG] Monthly interest breakdown for ${investorName}:`, monthlyInterestBreakdown);
-      console.log(`[DEBUG] Average return percentage for ${investorName}:`, averageReturnPercentage);
-      console.log(`[DEBUG] Available user interest rates:`, Array.from(this.interestRates.entries()));
-
       const grownCapital = transactions.length > 0 ? transactions[transactions.length - 1].balance : 0;
-
-      console.log(`[DEBUG] Report data for ${investorName}:`, {
-        principal,
-        totalInterest,
-        grownCapital,
-        transactionCount: transactions.length,
-        monthlyInterestBreakdown: monthlyInterestBreakdown.length
-      });
 
       // Check if report for this investor already exists to prevent duplicates
       const existingReportIndex = this.reports.findIndex(r => r.investorName === investorName);
@@ -268,12 +225,10 @@ export class ReportComponent implements OnInit, OnDestroy {
       if (existingReportIndex >= 0) {
         // Replace existing report
         this.reports[existingReportIndex] = newReport;
-        console.log(`[DEBUG] Updated existing report for ${investorName}. Total reports: ${this.reports.length}`);
         this.logger.debug('Updated existing report', { investorName });
       } else {
         // Add new report
         this.reports.push(newReport);
-        console.log(`[DEBUG] Added new report for ${investorName}. Total reports: ${this.reports.length}`);
         this.logger.debug('Added new report', { investorName });
       }
     } catch (error) {
@@ -356,14 +311,10 @@ export class ReportComponent implements OnInit, OnDestroy {
 
   // Calculate interest using user rates to prevent duplicates
   private calculateInterestUsingUserRates(rawTransactions: any[]): any[] {
-    console.log(`[USER-REPORT] 🔥 Calculating interest using user rates for ${rawTransactions.length} transactions`);
-    
     // Filter out existing interest transactions to avoid duplicates
     const nonInterestTransactions = rawTransactions.filter(t => t.type !== 'interest');
-    console.log(`[USER-REPORT] 🔥 Filtered to ${nonInterestTransactions.length} non-interest transactions`);
     
     if (nonInterestTransactions.length === 0) {
-      console.log(`[USER-REPORT] 🔥 No non-interest transactions found, returning empty array`);
       return [];
     }
     
@@ -411,12 +362,6 @@ export class ReportComponent implements OnInit, OnDestroy {
         const interestAmount = runningBalance * userRate;
         runningBalance += interestAmount; // Add interest to running balance
         
-        console.log(`[USER-REPORT] 🔥 Adding compound interest for ${monthKey}:`);
-        console.log(`[USER-REPORT] 🔥 Balance before interest: ${runningBalance - interestAmount}`);
-        console.log(`[USER-REPORT] 🔥 User rate: ${userRate} (${(userRate * 100).toFixed(2)}%)`);
-        console.log(`[USER-REPORT] 🔥 Calculated interest: ${interestAmount}`);
-        console.log(`[USER-REPORT] 🔥 Balance after interest: ${runningBalance}`);
-        
         // Create interest transaction for the last day of the month
         const interestTransaction = {
           id: `user_interest_${monthKey}`,
@@ -430,15 +375,12 @@ export class ReportComponent implements OnInit, OnDestroy {
         };
         
         transactionsWithInterest.push(interestTransaction);
-      } else {
-        console.log(`[USER-REPORT] 🔥 No interest for ${monthKey} - balance was ${runningBalance}`);
       }
     }
     
     // Sort all transactions by date
     transactionsWithInterest.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     
-    console.log(`[USER-REPORT] 🔥 Final transactions with user interest:`, transactionsWithInterest);
     return transactionsWithInterest;
   }
 

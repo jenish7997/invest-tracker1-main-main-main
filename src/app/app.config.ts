@@ -33,8 +33,7 @@ export const appConfig: ApplicationConfig = {
         try {
           // Set up Firestore with CORS-friendly settings for development
           return firestore;
-        } catch (error) {
-          console.warn('Firestore configuration warning:', error);
+        } catch {
           return firestore;
         }
       }

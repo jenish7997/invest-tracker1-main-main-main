@@ -35,14 +35,6 @@ export class AddmoneyComponent implements OnInit {
     this.svc.listInvestors().subscribe(inv => (this.investors = inv));
   }
 
-  // onInvestorChange(investorId: string) {
-  //   if (!investorId) return;
-  //   this.svc.listTransactionsByInvestor(investorId).subscribe(transactions => {
-  //     console.log('Transactions for investor', investorId, transactions);
-  //     this.SelectedInvestorTransection = transactions;
-  //   });
-  // }
-
   onSubmit() {
   if (this.transactionForm.valid) {
     const formData = this.transactionForm.value;

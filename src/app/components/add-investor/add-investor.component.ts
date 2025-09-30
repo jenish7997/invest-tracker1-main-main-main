@@ -50,7 +50,6 @@ export class AddInvestorComponent implements OnInit {
 
       } catch (error: any) {
         this.errorMessage = error.message || 'An unexpected error occurred.';
-        console.error('Registration failed:', error);
       } finally {
         this.loading = false;
       }

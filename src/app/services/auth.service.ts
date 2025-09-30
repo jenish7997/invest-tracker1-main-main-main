@@ -3,7 +3,7 @@ import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
 import { Auth, authState, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, User, getIdTokenResult, IdTokenResult } from '@angular/fire/auth';
 import { Observable, of, from, combineLatest } from 'rxjs';
-import { map, switchMap, shareReplay, startWith, catchError } from 'rxjs/operators';
+import { map, switchMap, shareReplay, catchError } from 'rxjs/operators';
 import { LoggerService } from './logger.service';
 
 interface AppUser {

@@ -49,9 +49,6 @@ export class WithdrawComponent implements OnInit {
           amount: null,
           date: ''
         });
-      })
-      .catch(error => {
-        console.error('Error saving transaction:', error);
       });
   } else {
     this.transactionForm.markAllAsTouched();
