@@ -189,7 +189,7 @@
           <span class="detail-amount">{{ t.amount | currency:'INR':'symbol':'1.2-2' }}</span>
         </div>
         <div *ngIf="t.type === 'interest'" class="detail-row interest">
-          <span class="detail-label">INTEREST</span>
+          <span class="detail-label">INTEREST <small class="interest-rate">({{ getTransactionInterestRate(t.date) }})</small></span>
           <span class="detail-amount">{{ t.amount | currency:'INR':'symbol':'1.2-2' }}</span>
         </div>
         <div *ngIf="t.type === 'withdraw'" class="detail-row withdrawal">
