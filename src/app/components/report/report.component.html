@@ -2,6 +2,16 @@
 <div class="report-container">
   <div class="report-header">
     <h1 class="report-title">{{ isAdmin ? 'All Investors Report' : 'My Investment Report' }}</h1>
+    <div class="header-buttons" *ngIf="!loading && !error && reports.length > 0">
+      <button class="export-btn pdf-btn" (click)="exportAsPDF()">
+        <span class="material-icons">picture_as_pdf</span>
+        Export as PDF
+      </button>
+      <button class="export-btn excel-btn" (click)="exportAsExcel()">
+        <span class="material-icons">table_chart</span>
+        Export as Excel
+      </button>
+    </div>
   </div>
 
   <!-- Loading State -->

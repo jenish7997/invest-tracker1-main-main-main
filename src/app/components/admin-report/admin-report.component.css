@@ -18,6 +18,59 @@
   gap: 1rem;
 }
 
+.header-buttons {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.export-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.export-btn .material-icons {
+  font-size: 1.2rem;
+}
+
+.pdf-btn {
+  background: linear-gradient(135deg, #dc3545, #c82333);
+  color: white;
+}
+
+.pdf-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #c82333, #a71d2a);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);
+}
+
+.excel-btn {
+  background: linear-gradient(135deg, #28a745, #218838);
+  color: white;
+}
+
+.excel-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #218838, #1e7e34);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
+}
+
+.export-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
 .header-info {
   display: flex;
   align-items: center;
@@ -466,6 +519,7 @@
   margin-bottom: 3rem;
   overflow: hidden;
   animation: slideIn 0.6s ease-out;
+  border: none; /* Remove any border */
 }
 
 .report-card-header {
@@ -535,7 +589,7 @@
   border-radius: 0;
   overflow: hidden;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-  border: 2px solid #1a237e;
+  border: none; /* Remove the blue border */
 }
 
 .stat-card {
@@ -1207,6 +1261,41 @@
     max-width: 430px;
     padding: 1rem;
     background-color: #ffffff;
+  }
+  
+  .report-title {
+    font-size: 1.5rem;
+  }
+  
+  .report-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .header-buttons {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .export-btn {
+    flex: 1;
+    min-width: 140px;
+    padding: 0.6rem 1rem;
+    font-size: 0.85rem;
+  }
+  
+  .export-btn .material-icons {
+    font-size: 1.1rem;
+  }
+  
+  .header-info {
+    width: 100%;
+  }
+  
+  .auto-update-info {
+    font-size: 0.8rem;
+    padding: 0.4rem 0.8rem;
   }
   
   .investment-report {

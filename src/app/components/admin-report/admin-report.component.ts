@@ -7,6 +7,9 @@ import { LoggerService } from '../../services/logger.service';
 import { Investor } from '../../models';
 import { Subscription } from 'rxjs';
 import { Functions } from '@angular/fire/functions';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
+import * as XLSX from 'xlsx';
 
 interface MonthlyInterest {
   month: string;
@@ -467,7 +470,239 @@ export class AdminReportComponent implements OnInit, OnDestroy {
     }
   }
 
+  // Export report as PDF
+  async exportAsPDF() {
+    try {
+      const element = document.querySelector('.report-container') as HTMLElement;
+      if (!element) {
+        this.logger.error('Report container not found');
+        return;
+      }
 
+      // Hide export buttons temporarily
+      const buttons = document.querySelectorAll('.export-btn');
+      buttons.forEach(btn => (btn as HTMLElement).style.display = 'none');
 
+      const canvas = await html2canvas(element, {
+        scale: 1, // Reduced scale to decrease file size
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#f8f9fa', // Match your website background
+        removeContainer: true,
+        allowTaint: true,
+        foreignObjectRendering: true,
+        imageTimeout: 15000
+      });
+
+      // Show buttons again
+      buttons.forEach(btn => (btn as HTMLElement).style.display = '');
+
+      // Convert to PNG with better quality to preserve colors
+      const imgData = canvas.toDataURL('image/png', 1.0); // Full quality to preserve colors
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      
+      const imgWidth = 210; // A4 width in mm
+      const pageHeight = 297; // A4 height in mm
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+
+      while (heightLeft >= 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+
+      const fileName = 'Admin_Investment_Report.pdf';
+      pdf.save(fileName);
+      
+      this.logger.debug('PDF exported successfully');
+    } catch (error) {
+      this.logger.error('Error exporting PDF', error);
+      alert('Error exporting PDF. Please try again.');
+    }
+  }
+
+  // Export report as Excel
+  exportAsExcel() {
+    try {
+      const wb = XLSX.utils.book_new();
+      
+      this.logger.debug('Starting Excel export', { totalReports: this.reports.length });
+
+      // Export each investor's report as a separate sheet
+      this.reports.forEach((report, index) => {
+        this.logger.debug('Processing report', { index, investorName: report.investorName });
+        // Prepare summary data with better formatting
+        const summaryData = [
+          ['ADMIN INVESTMENT REPORT'],
+          ['Investor Name', report.investorName],
+          ['Report Generated', new Date().toLocaleDateString()],
+          [],
+          ['FINANCIAL SUMMARY'],
+          ['Principal Amount', report.principal, '₹'],
+          ['Total Interest Earned', report.totalInterest, '₹'],
+          ['Current Grown Capital', report.grownCapital, '₹'],
+          ['Average Return Rate', (report.averageReturnPercentage * 100).toFixed(2) + '%'],
+          [],
+          ['TRANSACTION HISTORY'],
+          ['Date', 'Transaction Type', 'Principal Amount', 'Interest Amount', 'Withdrawal Amount', 'Running Balance']
+        ];
+
+        // Add transaction data with better formatting
+        report.transactions.forEach(t => {
+          const principalAmount = (t.type === 'invest' || t.type === 'deposit') ? t.amount : '';
+          const interestAmount = t.type === 'interest' ? t.amount : '';
+          const withdrawalAmount = t.type === 'withdraw' ? t.amount : '';
+          
+          summaryData.push([
+            this.formatDate(t.date),
+            t.type.toUpperCase(),
+            principalAmount ? '₹' + principalAmount.toLocaleString() : '',
+            interestAmount ? '₹' + interestAmount.toLocaleString() : '',
+            withdrawalAmount ? '₹' + withdrawalAmount.toLocaleString() : '',
+            '₹' + t.balance.toLocaleString()
+          ]);
+        });
+
+        // Create worksheet
+        const ws = XLSX.utils.aoa_to_sheet(summaryData);
+        
+        // Set column widths for better readability
+        ws['!cols'] = [
+          { wch: 12 }, // Date
+          { wch: 18 }, // Transaction Type
+          { wch: 18 }, // Principal Amount
+          { wch: 18 }, // Interest Amount
+          { wch: 18 }, // Withdrawal Amount
+          { wch: 20 }  // Running Balance
+        ];
+
+        // Add borders and formatting
+        const range = XLSX.utils.decode_range(ws['!ref'] || 'A1:A1');
+        for (let R = range.s.r; R <= range.e.r; ++R) {
+          for (let C = range.s.c; C <= range.e.c; ++C) {
+            const cellAddress = XLSX.utils.encode_cell({ r: R, c: C });
+            if (!ws[cellAddress]) ws[cellAddress] = { v: '' };
+            
+            // Header row styling
+            if (R === 0 || R === 4 || R === 10) {
+              ws[cellAddress].s = {
+                font: { bold: true, color: { rgb: 'FFFFFF' } },
+                fill: { fgColor: { rgb: '1a237e' } },
+                alignment: { horizontal: 'center' }
+              };
+            }
+            // Financial summary rows
+            else if (R >= 5 && R <= 8) {
+              ws[cellAddress].s = {
+                font: { bold: true },
+                fill: { fgColor: { rgb: 'f0f8ff' } }
+              };
+            }
+            // Transaction header
+            else if (R === 10) {
+              ws[cellAddress].s = {
+                font: { bold: true, color: { rgb: 'FFFFFF' } },
+                fill: { fgColor: { rgb: '2e7d32' } },
+                alignment: { horizontal: 'center' }
+              };
+            }
+            // Transaction data rows
+            else if (R > 10) {
+              ws[cellAddress].s = {
+                fill: { fgColor: { rgb: 'fafafa' } },
+                alignment: { horizontal: 'right' }
+              };
+            }
+          }
+        }
+
+        // Add sheet to workbook (sanitize sheet name)
+        const sheetName = `${index + 1}. ${report.investorName.substring(0, 25).replace(/[:\\/?*\[\]]/g, '')}`;
+        XLSX.utils.book_append_sheet(wb, ws, sheetName);
+      });
+
+      // Add summary sheet
+      if (this.reports.length > 1) {
+        const summaryData = [
+          ['TOTAL PORTFOLIO SUMMARY'],
+          ['Report Generated', new Date().toLocaleDateString()],
+          [],
+          ['OVERALL FINANCIALS'],
+          ['Total Principal Invested', this.totalPrincipal, '₹'],
+          ['Total Interest Earned', this.totalInterest, '₹'],
+          ['Total Grown Capital', this.totalGrownCapital, '₹'],
+          [],
+          ['INVESTOR BREAKDOWN'],
+          ['Investor Name', 'Principal Amount', 'Interest Earned', 'Grown Capital', 'Return %']
+        ];
+
+        this.reports.forEach(report => {
+          const returnPercentage = report.principal > 0 ? 
+            ((report.grownCapital - report.principal) / report.principal * 100).toFixed(2) + '%' : '0%';
+          
+          summaryData.push([
+            report.investorName,
+            '₹' + report.principal.toLocaleString(),
+            '₹' + report.totalInterest.toLocaleString(),
+            '₹' + report.grownCapital.toLocaleString(),
+            returnPercentage
+          ]);
+        });
+
+        const summaryWs = XLSX.utils.aoa_to_sheet(summaryData);
+        summaryWs['!cols'] = [
+          { wch: 25 }, // Investor Name
+          { wch: 18 }, // Principal
+          { wch: 18 }, // Interest
+          { wch: 18 }, // Grown Capital
+          { wch: 12 }  // Return %
+        ];
+
+        // Format summary sheet
+        const range = XLSX.utils.decode_range(summaryWs['!ref'] || 'A1:A1');
+        for (let R = range.s.r; R <= range.e.r; ++R) {
+          for (let C = range.s.c; C <= range.e.c; ++C) {
+            const cellAddress = XLSX.utils.encode_cell({ r: R, c: C });
+            if (!summaryWs[cellAddress]) summaryWs[cellAddress] = { v: '' };
+            
+            if (R === 0 || R === 3 || R === 8) {
+              summaryWs[cellAddress].s = {
+                font: { bold: true, color: { rgb: 'FFFFFF' } },
+                fill: { fgColor: { rgb: '1a237e' } },
+                alignment: { horizontal: 'center' }
+              };
+            } else if (R >= 4 && R <= 6) {
+              summaryWs[cellAddress].s = {
+                font: { bold: true },
+                fill: { fgColor: { rgb: 'e8f5e8' } }
+              };
+            } else if (R > 8) {
+              summaryWs[cellAddress].s = {
+                fill: { fgColor: { rgb: 'f0f8ff' } },
+                alignment: { horizontal: 'right' }
+              };
+            }
+          }
+        }
+
+        XLSX.utils.book_append_sheet(wb, summaryWs, 'Portfolio Summary');
+      }
+
+      // Save file
+      const fileName = 'Admin_Investment_Report.xlsx';
+      XLSX.writeFile(wb, fileName);
+      
+      this.logger.debug('Excel exported successfully');
+    } catch (error) {
+      this.logger.error('Error exporting Excel', error);
+      alert('Error exporting Excel. Please try again.');
+    }
+  }
 
 }
