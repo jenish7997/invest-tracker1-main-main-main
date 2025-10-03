@@ -40,6 +40,43 @@
     </ul>
   </div>
 
+  <!-- Total Aggregation Section - Visible to Admin Only -->
+  <div *ngIf="!loading && !error && reports.length > 0 && isAdmin" class="total-aggregation-card">
+    <div class="aggregation-header">
+      <h2 class="aggregation-title">Total Portfolio Summary</h2>
+      <span class="aggregation-subtitle">All Investors Combined</span>
+    </div>
+    <div class="aggregation-stats">
+      <div class="aggregation-stat principal">
+        <div class="aggregation-icon">
+          <span class="material-icons">account_balance</span>
+        </div>
+        <div class="aggregation-content">
+          <h3>Total Principal</h3>
+          <p class="aggregation-value">{{ totalPrincipal | currency:'INR':'symbol':'1.2-2' }}</p>
+        </div>
+      </div>
+      <div class="aggregation-stat interest">
+        <div class="aggregation-icon">
+          <span class="material-icons">trending_up</span>
+        </div>
+        <div class="aggregation-content">
+          <h3>Total Interest</h3>
+          <p class="aggregation-value">{{ totalInterest | currency:'INR':'symbol':'1.2-2' }}</p>
+        </div>
+      </div>
+      <div class="aggregation-stat capital">
+        <div class="aggregation-icon">
+          <span class="material-icons">savings</span>
+        </div>
+        <div class="aggregation-content">
+          <h3>Total Grown Capital</h3>
+          <p class="aggregation-value">{{ totalGrownCapital | currency:'INR':'symbol':'1.2-2' }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- DESKTOP VERSION - Original Design -->
   <div *ngFor="let report of reports" class="report-card desktop-only">
     <div class="report-card-header">

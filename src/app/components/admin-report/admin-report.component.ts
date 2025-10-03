@@ -42,6 +42,11 @@ export class AdminReportComponent implements OnInit, OnDestroy {
   private userSubscription?: Subscription;
   private ratesSubscription?: Subscription;
   
+  // Total aggregation properties
+  totalPrincipal: number = 0;
+  totalInterest: number = 0;
+  totalGrownCapital: number = 0;
+  
 
   constructor(
     private investmentService: InvestmentService,
@@ -263,10 +268,25 @@ export class AdminReportComponent implements OnInit, OnDestroy {
         this.reports.push(newReport);
         this.logger.debug('Added new report', { investorName });
       }
+      
+      // Calculate totals after adding/updating report
+      this.calculateTotals();
     } catch (error) {
       this.logger.error('Error in generateReport', error);
       throw error;
     }
+  }
+  
+  private calculateTotals() {
+    this.totalPrincipal = this.reports.reduce((sum, report) => sum + report.principal, 0);
+    this.totalInterest = this.reports.reduce((sum, report) => sum + report.totalInterest, 0);
+    this.totalGrownCapital = this.reports.reduce((sum, report) => sum + report.grownCapital, 0);
+    
+    this.logger.debug('Totals calculated', {
+      totalPrincipal: this.totalPrincipal,
+      totalInterest: this.totalInterest,
+      totalGrownCapital: this.totalGrownCapital
+    });
   }
 
   // Method to calculate interest using ONLY admin rates
