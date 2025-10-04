@@ -341,18 +341,38 @@ export class ReportComponent implements OnInit, OnDestroy {
       return [];
     }
     
-    const transactions = [...nonInterestTransactions]; // Create a copy
-    const transactionsWithInterest = [];
+    // Sort all transactions by date and then by createdAt for same-day transactions
+    const sortedTransactions = [...nonInterestTransactions].sort((a, b) => {
+      const dateCompare = new Date(a.date).getTime() - new Date(b.date).getTime();
+      if (dateCompare === 0) {
+        const createdAtA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const createdAtB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return createdAtA - createdAtB;
+      }
+      return dateCompare;
+    });
     
-    // Process transactions chronologically and add interest at month end
-    let runningBalance = 0; // Track running balance including interest
-    const allTransactions = [...transactions]; // Start with non-interest transactions
+    const transactionsWithInterest = [];
+    let runningBalance = 0;
+    
+    // Process all transactions chronologically
+    for (const transaction of sortedTransactions) {
+      if (transaction.type === 'invest' || transaction.type === 'deposit') {
+        runningBalance += transaction.amount;
+      } else if (transaction.type === 'withdraw') {
+        runningBalance -= transaction.amount;
+      }
+      
+      // Add the transaction with updated balance
+      transactionsWithInterest.push({ 
+        ...transaction, 
+        balance: runningBalance 
+      });
+    }
+    
+    // Now add interest at the end of each month where there's a positive balance
     const userRateMonths = Array.from(this.interestRates.keys()).sort();
     
-    // Sort all transactions by date
-    allTransactions.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-    
-    // Process each month
     for (const monthKey of userRateMonths) {
       const userRate = this.interestRates.get(monthKey) || 0;
       
@@ -365,44 +385,66 @@ export class ReportComponent implements OnInit, OnDestroy {
       const monthStartDate = new Date(year, month - 1, 1); // month is 0-indexed
       const monthEndDate = new Date(year, month, 0); // Last day of the month
       
-      // Process all transactions in this month
-      for (const t of allTransactions) {
+      // Find the balance at the end of this month (after all transactions in the month)
+      let balanceAtMonthEnd = 0;
+      let hasTransactionsInMonth = false;
+      
+      // Look through all transactions to find the balance at the end of this month
+      // We need to find the last transaction in this month to get the correct balance
+      for (const t of transactionsWithInterest) {
         const transactionDate = new Date(t.date);
         
         if (transactionDate >= monthStartDate && transactionDate <= monthEndDate) {
-          if (t.type === 'invest' || t.type === 'deposit') {
-            runningBalance += t.amount;
-            transactionsWithInterest.push({ ...t, balance: runningBalance });
-          } else if (t.type === 'withdraw') {
-            runningBalance -= t.amount;
-            transactionsWithInterest.push({ ...t, balance: runningBalance });
-          }
+          balanceAtMonthEnd = t.balance;
+          hasTransactionsInMonth = true;
         }
       }
       
-      // Add interest at the end of the month if there's a positive balance
-      if (runningBalance > 0) {
-        const interestAmount = runningBalance * userRate;
-        runningBalance += interestAmount; // Add interest to running balance
+      // If there were transactions in this month and we have a positive balance, add interest
+      if (hasTransactionsInMonth && balanceAtMonthEnd > 0) {
+        const interestAmount = balanceAtMonthEnd * userRate;
         
         // Create interest transaction for the last day of the month
         const interestTransaction = {
           id: `user_interest_${monthKey}`,
-          investorId: transactions[0]?.investorId || '',
-          investorName: transactions[0]?.investorName || '',
+          investorId: sortedTransactions[0]?.investorId || '',
+          investorName: sortedTransactions[0]?.investorName || '',
           date: monthEndDate,
           type: 'interest',
           amount: interestAmount,
-          balance: runningBalance, // Balance after adding interest
+          balance: balanceAtMonthEnd + interestAmount, // Balance after adding interest
           description: `Interest (${(userRate * 100).toFixed(1)}%)`
         };
         
         transactionsWithInterest.push(interestTransaction);
+        
+        // Update the balance for all subsequent transactions
+        // We need to update the balance for all transactions that come after this month
+        for (let i = 0; i < transactionsWithInterest.length; i++) {
+          const t = transactionsWithInterest[i];
+          const transactionDate = new Date(t.date);
+          
+          // If this transaction is after the current month, add the interest to its balance
+          if (transactionDate > monthEndDate) {
+            transactionsWithInterest[i] = {
+              ...t,
+              balance: t.balance + interestAmount
+            };
+          }
+        }
       }
     }
     
-    // Sort all transactions by date
-    transactionsWithInterest.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    // Sort all transactions by date and then by createdAt for same-day transactions
+    transactionsWithInterest.sort((a, b) => {
+      const dateCompare = new Date(a.date).getTime() - new Date(b.date).getTime();
+      if (dateCompare === 0) {
+        const createdAtA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const createdAtB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return createdAtA - createdAtB;
+      }
+      return dateCompare;
+    });
     
     return transactionsWithInterest;
   }
@@ -440,73 +482,30 @@ export class ReportComponent implements OnInit, OnDestroy {
 
   // Export report as PDF
   async exportAsPDF() {
-    try {
-      const element = document.querySelector('.report-container') as HTMLElement;
-      if (!element) {
-        this.logger.error('Report container not found');
-        return;
-      }
-
-      // Hide export buttons temporarily
-      const buttons = document.querySelectorAll('.export-btn');
-      buttons.forEach(btn => (btn as HTMLElement).style.display = 'none');
-
-      const canvas = await html2canvas(element, {
-        scale: 1, // Reduced scale to decrease file size
-        useCORS: true,
-        logging: false,
-        backgroundColor: '#f8f9fa', // Match your website background
-        removeContainer: true,
-        allowTaint: true,
-        foreignObjectRendering: true,
-        imageTimeout: 15000
-      });
-
-      // Show buttons again
-      buttons.forEach(btn => (btn as HTMLElement).style.display = '');
-
-      // Convert to PNG with better quality to preserve colors
-      const imgData = canvas.toDataURL('image/png', 1.0); // Full quality to preserve colors
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      
-      const imgWidth = 210; // A4 width in mm
-      const pageHeight = 297; // A4 height in mm
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      let heightLeft = imgHeight;
-      let position = 0;
-
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
-
-      while (heightLeft >= 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
-      }
-
-      const fileName = this.isAdmin ? 'All_Investors_Report.pdf' : 'My_Investment_Report.pdf';
-      pdf.save(fileName);
-      
-      this.logger.debug('PDF exported successfully');
-    } catch (error) {
-      this.logger.error('Error exporting PDF', error);
-      alert('Error exporting PDF. Please try again.');
-    }
+    alert('PDF export feature is temporarily disabled. Please use Excel export instead.');
   }
 
   // Export report as Excel
   exportAsExcel() {
     try {
+      // Check if reports are still loading
+      if (this.loading) {
+        alert('Reports are still loading. Please wait and try again.');
+        return;
+      }
+
+      // Check if we have any reports
+      if (!this.reports || this.reports.length === 0) {
+        alert('No report data available. Please wait for reports to load and try again.');
+        return;
+      }
+
       const wb = XLSX.utils.book_new();
       
-      this.logger.debug('Starting Excel export', { totalReports: this.reports.length });
-
-      // Export each investor's report as a separate sheet
+      // Create a sheet for each investor
       this.reports.forEach((report, index) => {
-        this.logger.debug('Processing report', { index, investorName: report.investorName });
-        // Prepare summary data with better formatting
-        const summaryData = [
+        // Prepare data for this investor
+        const investorData = [
           ['INVESTMENT REPORT'],
           ['Investor Name', report.investorName],
           ['Report Generated', new Date().toLocaleDateString()],
@@ -521,13 +520,13 @@ export class ReportComponent implements OnInit, OnDestroy {
           ['Date', 'Transaction Type', 'Principal Amount', 'Interest Amount', 'Withdrawal Amount', 'Running Balance']
         ];
 
-        // Add transaction data with better formatting
+        // Add transaction data
         report.transactions.forEach(t => {
           const principalAmount = (t.type === 'invest' || t.type === 'deposit') ? t.amount : '';
           const interestAmount = t.type === 'interest' ? t.amount : '';
           const withdrawalAmount = t.type === 'withdraw' ? t.amount : '';
           
-          summaryData.push([
+          investorData.push([
             this.formatDate(t.date),
             t.type.toUpperCase(),
             principalAmount ? '₹' + principalAmount.toLocaleString() : '',
@@ -538,9 +537,9 @@ export class ReportComponent implements OnInit, OnDestroy {
         });
 
         // Create worksheet
-        const ws = XLSX.utils.aoa_to_sheet(summaryData);
+        const ws = XLSX.utils.aoa_to_sheet(investorData);
         
-        // Set column widths for better readability
+        // Set column widths
         ws['!cols'] = [
           { wch: 12 }, // Date
           { wch: 18 }, // Transaction Type
@@ -550,52 +549,12 @@ export class ReportComponent implements OnInit, OnDestroy {
           { wch: 20 }  // Running Balance
         ];
 
-        // Add borders and formatting
-        const range = XLSX.utils.decode_range(ws['!ref'] || 'A1:A1');
-        for (let R = range.s.r; R <= range.e.r; ++R) {
-          for (let C = range.s.c; C <= range.e.c; ++C) {
-            const cellAddress = XLSX.utils.encode_cell({ r: R, c: C });
-            if (!ws[cellAddress]) ws[cellAddress] = { v: '' };
-            
-            // Header row styling
-            if (R === 0 || R === 4 || R === 10) {
-              ws[cellAddress].s = {
-                font: { bold: true, color: { rgb: 'FFFFFF' } },
-                fill: { fgColor: { rgb: '1a237e' } },
-                alignment: { horizontal: 'center' }
-              };
-            }
-            // Financial summary rows
-            else if (R >= 5 && R <= 8) {
-              ws[cellAddress].s = {
-                font: { bold: true },
-                fill: { fgColor: { rgb: 'f0f8ff' } }
-              };
-            }
-            // Transaction header
-            else if (R === 10) {
-              ws[cellAddress].s = {
-                font: { bold: true, color: { rgb: 'FFFFFF' } },
-                fill: { fgColor: { rgb: '2e7d32' } },
-                alignment: { horizontal: 'center' }
-              };
-            }
-            // Transaction data rows
-            else if (R > 10) {
-              ws[cellAddress].s = {
-                fill: { fgColor: { rgb: 'fafafa' } },
-                alignment: { horizontal: 'right' }
-              };
-            }
-          }
-        }
-
-        // Add sheet to workbook (sanitize sheet name)
+        // Add sheet to workbook
         const sheetName = `${index + 1}. ${report.investorName.substring(0, 25).replace(/[:\\/?*\[\]]/g, '')}`;
         XLSX.utils.book_append_sheet(wb, ws, sheetName);
       });
 
-      // Add summary sheet if admin
+      // Add summary sheet if admin and we have multiple investors
       if (this.isAdmin && this.reports.length > 1) {
         const summaryData = [
           ['TOTAL PORTFOLIO SUMMARY'],
@@ -632,33 +591,6 @@ export class ReportComponent implements OnInit, OnDestroy {
           { wch: 12 }  // Return %
         ];
 
-        // Format summary sheet
-        const range = XLSX.utils.decode_range(summaryWs['!ref'] || 'A1:A1');
-        for (let R = range.s.r; R <= range.e.r; ++R) {
-          for (let C = range.s.c; C <= range.e.c; ++C) {
-            const cellAddress = XLSX.utils.encode_cell({ r: R, c: C });
-            if (!summaryWs[cellAddress]) summaryWs[cellAddress] = { v: '' };
-            
-            if (R === 0 || R === 3 || R === 8) {
-              summaryWs[cellAddress].s = {
-                font: { bold: true, color: { rgb: 'FFFFFF' } },
-                fill: { fgColor: { rgb: '1a237e' } },
-                alignment: { horizontal: 'center' }
-              };
-            } else if (R >= 4 && R <= 6) {
-              summaryWs[cellAddress].s = {
-                font: { bold: true },
-                fill: { fgColor: { rgb: 'e8f5e8' } }
-              };
-            } else if (R > 8) {
-              summaryWs[cellAddress].s = {
-                fill: { fgColor: { rgb: 'f0f8ff' } },
-                alignment: { horizontal: 'right' }
-              };
-            }
-          }
-        }
-
         XLSX.utils.book_append_sheet(wb, summaryWs, 'Portfolio Summary');
       }
 
@@ -666,10 +598,11 @@ export class ReportComponent implements OnInit, OnDestroy {
       const fileName = this.isAdmin ? 'All_Investors_Report.xlsx' : 'My_Investment_Report.xlsx';
       XLSX.writeFile(wb, fileName);
       
-      this.logger.debug('Excel exported successfully');
+      alert(`Excel exported successfully with ${this.reports.length} investors!`);
+      
     } catch (error) {
-      this.logger.error('Error exporting Excel', error);
-      alert('Error exporting Excel. Please try again.');
+      console.error('Error exporting Excel', error);
+      alert('Error exporting Excel: ' + error.message);
     }
   }
 
