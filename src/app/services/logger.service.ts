@@ -8,15 +8,9 @@ export class LoggerService {
   
   private isProduction = environment.production;
 
-  // Debug logging - only in development
+  // Debug logging - removed
   debug(message: string, data?: any): void {
-    if (!this.isProduction) {
-      if (data) {
-        console.log(`[DEBUG] ${message}`, data);
-      } else {
-        console.log(`[DEBUG] ${message}`);
-      }
-    }
+    // Debug logging completely removed
   }
 
   // Info logging - only in development
@@ -80,43 +74,9 @@ export class LoggerService {
     return error;
   }
 
-  // Log financial data safely (only in development)
+  // Log financial data safely - removed
   logFinancialData(context: string, data: any): void {
-    if (!this.isProduction) {
-      // Sanitize financial data for logging
-      const sanitizedData = this.sanitizeFinancialData(data);
-      console.log(`[FINANCIAL] ${context}`, sanitizedData);
-    }
+    // Financial data logging completely removed
   }
 
-  // Sanitize financial data for logging
-  private sanitizeFinancialData(data: any): any {
-    if (!data) return data;
-    
-    if (Array.isArray(data)) {
-      return data.map(item => this.sanitizeFinancialData(item));
-    }
-    
-    if (typeof data === 'object') {
-      const sanitized: any = {};
-      
-      for (const [key, value] of Object.entries(data)) {
-        // Mask sensitive financial fields
-        if (key.toLowerCase().includes('amount') || 
-            key.toLowerCase().includes('balance') || 
-            key.toLowerCase().includes('interest')) {
-          sanitized[key] = '***MASKED***';
-        } else if (key.toLowerCase().includes('investorid') || 
-                   key.toLowerCase().includes('userid')) {
-          sanitized[key] = '***MASKED***';
-        } else {
-          sanitized[key] = this.sanitizeFinancialData(value);
-        }
-      }
-      
-      return sanitized;
-    }
-    
-    return data;
-  }
 }

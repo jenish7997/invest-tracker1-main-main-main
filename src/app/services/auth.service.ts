@@ -33,20 +33,29 @@ export class AuthService {
         if (!user) {
           return of(false);
         }
-        return from(getIdTokenResult(user, true)).pipe(
-          map((tokenResult: IdTokenResult) => {
-            try {
-              return tokenResult.claims['admin'] === true;
-            } catch (error) {
-              this.logger.warn('Error reading admin claim', error);
-              return false;
-            }
-          }),
-          catchError(error => {
-            this.logger.warn('Error getting ID token result', error);
-            return of(false);
-          })
-        );
+        // Use setTimeout to ensure Firebase calls happen in the next tick
+        return new Observable<boolean>(observer => {
+          setTimeout(() => {
+            from(getIdTokenResult(user, true)).pipe(
+              map((tokenResult: IdTokenResult) => {
+                try {
+                  return tokenResult.claims['admin'] === true;
+                } catch (error) {
+                  this.logger.warn('Error reading admin claim', error);
+                  return false;
+                }
+              }),
+              catchError(error => {
+                this.logger.warn('Error getting ID token result', error);
+                return of(false);
+              })
+            ).subscribe({
+              next: (result) => observer.next(result),
+              error: (error) => observer.error(error),
+              complete: () => observer.complete()
+            });
+          }, 0);
+        });
       }),
       shareReplay(1)
     );

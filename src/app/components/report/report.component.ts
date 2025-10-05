@@ -106,16 +106,19 @@ export class ReportComponent implements OnInit, OnDestroy {
   }
 
   private refreshReports() {
-    if (this.isAdmin) {
-      this.loadAllInvestorsReports();
-    } else {
-      // For non-admin users, we need to get the current user info
-      // This is a bit tricky since we're already in a user subscription
-      // We'll store the current user info to use here
-      if (this.currentUser) {
-        this.loadUserReport(this.currentUser.uid, this.currentUser.displayName);
+    // Use setTimeout to ensure Firebase calls happen in the next tick
+    setTimeout(() => {
+      if (this.isAdmin) {
+        this.loadAllInvestorsReports();
+      } else {
+        // For non-admin users, we need to get the current user info
+        // This is a bit tricky since we're already in a user subscription
+        // We'll store the current user info to use here
+        if (this.currentUser) {
+          this.loadUserReport(this.currentUser.uid, this.currentUser.displayName);
+        }
       }
-    }
+    }, 0);
   }
 
 
@@ -131,16 +134,19 @@ export class ReportComponent implements OnInit, OnDestroy {
         
         let reportsGenerated = 0;
         investors.forEach(investor => {
-          this.generateReport(investor.id, investor.name).then(() => {
-            reportsGenerated++;
-            if (reportsGenerated === investors.length) {
+          // Use setTimeout to ensure Firebase calls happen in the next tick
+          setTimeout(() => {
+            this.generateReport(investor.id, investor.name).then(() => {
+              reportsGenerated++;
+              if (reportsGenerated === investors.length) {
+                this.loading = false;
+              }
+            }).catch(error => {
+              this.logger.error('Error generating report for investor', error);
+              this.error = 'Error loading investor data';
               this.loading = false;
-            }
-          }).catch(error => {
-            this.logger.error('Error generating report for investor', error);
-            this.error = 'Error loading investor data';
-            this.loading = false;
-          });
+            });
+          }, 0);
         });
       },
       error: (error) => {
@@ -155,14 +161,17 @@ export class ReportComponent implements OnInit, OnDestroy {
     this.logger.debug('Loading user report', { userName, userId });
     this.logger.debug('Current reports count before loading', { count: this.reports.length });
     
-    this.generateReport(userId, userName).then(() => {
-      this.logger.debug('User report loaded', { totalReports: this.reports.length });
-      this.loading = false;
-    }).catch(error => {
-      this.logger.error('Error generating user report', error);
-      this.error = 'Error loading user data';
-      this.loading = false;
-    });
+    // Use setTimeout to ensure Firebase calls happen in the next tick
+    setTimeout(() => {
+      this.generateReport(userId, userName).then(() => {
+        this.logger.debug('User report loaded', { totalReports: this.reports.length });
+        this.loading = false;
+      }).catch(error => {
+        this.logger.error('Error generating user report', error);
+        this.error = 'Error loading user data';
+        this.loading = false;
+      });
+    }, 0);
   }
 
   async generateReport(investorId: string, investorName: string): Promise<void> {
