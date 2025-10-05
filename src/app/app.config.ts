@@ -5,7 +5,7 @@ import { routes } from './app.route';
 import { initializeApp, provideFirebaseApp } from '@angular/fire/app';
 import { getAuth, provideAuth } from '@angular/fire/auth';
 import { getFirestore, provideFirestore, connectFirestoreEmulator } from '@angular/fire/firestore';
-import { getFunctions, provideFunctions } from '@angular/fire/functions';
+import { getFunctions, provideFunctions, connectFunctionsEmulator } from '@angular/fire/functions';
 import { provideAnimations } from '@angular/platform-browser/animations';
 import { environment } from '../environments/environment';
 import { AuthService } from './services/auth.service';
@@ -40,7 +40,13 @@ export const appConfig: ApplicationConfig = {
     }),
     provideFunctions(() => {
       const functions = getFunctions();
+      
       // Configure functions settings
+      if (!environment.production) {
+        // In development, you might want to use the emulator
+        // connectFunctionsEmulator(functions, 'localhost', 5001);
+      }
+      
       return functions;
     }),
     provideAnimations(),

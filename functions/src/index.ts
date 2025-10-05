@@ -493,3 +493,54 @@ export const createInvestorUser = onCall({
     throw new HttpsError("internal", "An unexpected error occurred.");
   }
 });
+
+/**
+ * Deletes an investor user from both Firebase Auth and Firestore.
+ */
+export const deleteInvestorUser = onCall({
+  cors: corsOrigins
+}, async (request) => {
+  await verifyAdmin(request.auth);
+
+  const { investorId } = request.data;
+
+  if (!investorId) {
+    throw new HttpsError("invalid-argument", "Investor ID is required.");
+  }
+
+  try {
+    // First, delete all transactions for this investor
+    const transactionsRef = admin.firestore().collection("transactions");
+    const transactionsQuery = await transactionsRef
+      .where("investorId", "==", investorId)
+      .get();
+    
+    // Delete all transactions
+    const batch = admin.firestore().batch();
+    transactionsQuery.docs.forEach(doc => {
+      batch.delete(doc.ref);
+    });
+    
+    // Delete the investor document
+    const investorDoc = admin.firestore().collection("investors").doc(investorId);
+    batch.delete(investorDoc);
+    
+    // Commit the Firestore deletions
+    await batch.commit();
+    
+    // Finally, delete the user from Firebase Auth
+    await admin.auth().deleteUser(investorId);
+
+    logger.info("Successfully deleted investor user:", { investorId });
+    return { success: true, message: "Investor and all associated data have been successfully deleted." };
+
+  } catch (error: any) {
+    logger.error("Error deleting investor user:", error);
+    if (error.code === "auth/user-not-found") {
+      // User might already be deleted from Auth but still exists in Firestore
+      logger.warn("User not found in Firebase Auth, but continuing with Firestore cleanup");
+      return { success: true, message: "Investor data has been cleaned up (user was not found in Auth)." };
+    }
+    throw new HttpsError("internal", "An unexpected error occurred while deleting the investor.");
+  }
+});

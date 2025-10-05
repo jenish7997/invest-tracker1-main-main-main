@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { InvestmentService } from '../../services/investment.service';
 import { AuthService } from '../../services/auth.service';
+import { LoggerService } from '../../services/logger.service';
 import { Investor } from '../../models';
 
 @Component({
@@ -18,7 +19,8 @@ export class AdminComponent implements OnInit {
 
   constructor(
     private svc: InvestmentService,
-    private authService: AuthService
+    private authService: AuthService,
+    private logger: LoggerService
   ) {}
 
   ngOnInit(): void {
@@ -38,9 +40,9 @@ export class AdminComponent implements OnInit {
     const confirmed = confirm(
       `Are you sure you want to delete ${investorName}?\n\n` +
       `This will permanently delete:\n` +
-      `• The investor's account from Firebase Auth\n` +
       `• All their transaction history\n` +
-      `• All their balance data\n\n` +
+      `• All their balance data\n` +
+      `• The investor record\n\n` +
       `This action cannot be undone!`
     );
     
@@ -49,7 +51,12 @@ export class AdminComponent implements OnInit {
     this.isDeleting = true;
     
     try {
-      alert('Investor deletion is disabled. Please use Firebase Console to manage investors.');
+      await this.svc.deleteInvestor(investorId);
+      alert(`${investorName} has been successfully deleted.`);
+      this.loadInvestors(); // Refresh the list
+    } catch (error) {
+      alert(`Failed to delete ${investorName}. Please try again.`);
+      this.logger.error('Error deleting investor', error);
     } finally {
       this.isDeleting = false;
     }

@@ -1,14 +1,18 @@
 
 import { Injectable, inject } from '@angular/core';
 import { Firestore, collection, collectionData, doc, setDoc, addDoc, query, where, getDocs, Timestamp, orderBy, getDoc, deleteDoc } from '@angular/fire/firestore';
+import { Functions, httpsCallable } from '@angular/fire/functions';
 import { Observable } from 'rxjs';
 import { Transaction, Investor, MonthlyRate } from '../models';
+import { LoggerService } from './logger.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class InvestmentService {
   private firestore: Firestore = inject(Firestore);
+  private functions: Functions = inject(Functions);
+  private logger: LoggerService = inject(LoggerService);
 
   listInvestors(): Observable<Investor[]> {
     const investorsCollection = collection(this.firestore, 'investors');
@@ -159,6 +163,19 @@ export class InvestmentService {
   deleteTransaction(transactionId: string): Promise<void> {
     const transactionDoc = doc(this.firestore, 'transactions', transactionId);
     return deleteDoc(transactionDoc);
+  }
+
+  async deleteInvestor(investorId: string): Promise<void> {
+    // Call the Cloud Function to delete both Firestore data and Firebase Auth user
+    const deleteInvestorUser = httpsCallable(this.functions, 'deleteInvestorUser');
+    
+    try {
+      const result = await deleteInvestorUser({ investorId });
+      this.logger.info('Investor deletion result', result.data);
+    } catch (error) {
+      this.logger.error('Error deleting investor', error);
+      throw error;
+    }
   }
 
   private formatDateForDisplay(date: Date): string {
