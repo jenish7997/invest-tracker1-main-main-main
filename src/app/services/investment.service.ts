@@ -30,8 +30,7 @@ export class InvestmentService {
     
     // First, get all transactions for the investor
     let constraints = [
-      where('investorId', '==', investorId),
-      orderBy('date', 'asc')
+      where('investorId', '==', investorId)
     ];
 
     const q = query(collection(this.firestore, 'transactions'), ...constraints);
@@ -90,8 +89,7 @@ export class InvestmentService {
     const transactionsCollection = collection(this.firestore, 'transactions');
     const q = query(
       transactionsCollection, 
-      where('investorId', '==', investorId),
-      orderBy('date', 'asc')
+      where('investorId', '==', investorId)
     );
     const querySnapshot = await getDocs(q);
     
@@ -127,8 +125,7 @@ export class InvestmentService {
     const transactionsCollection = collection(this.firestore, 'transactions');
     const q = query(
       transactionsCollection, 
-      where('investorId', '==', investorId),
-      orderBy('date', 'desc') // Order by date descending (newest first)
+      where('investorId', '==', investorId)
     );
     
     // Return observable that sorts by createdAt as secondary sort

@@ -610,8 +610,8 @@ export class ReportComponent implements OnInit, OnDestroy {
       alert(`Excel exported successfully with ${this.reports.length} investors!`);
       
     } catch (error) {
-      console.error('Error exporting Excel', error);
-      alert('Error exporting Excel: ' + error.message);
+      this.logger.error('Error exporting Excel', error);
+      alert('Error exporting Excel. Please try again.');
     }
   }
 
