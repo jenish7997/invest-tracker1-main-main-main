@@ -1,5 +1,5 @@
 
-import { ApplicationConfig, importProvidersFrom } from '@angular/core';
+import { ApplicationConfig, importProvidersFrom, ErrorHandler } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { routes } from './app.route';
 import { initializeApp, provideFirebaseApp } from '@angular/fire/app';
@@ -11,9 +11,28 @@ import { environment } from '../environments/environment';
 import { AuthService } from './services/auth.service';
 import { localeConfig } from './locale.config';
 
+// Global error handler to catch and handle unexpected errors
+class GlobalErrorHandler implements ErrorHandler {
+  handleError(error: any): void {
+    // Log the error but don't let it crash the app
+    console.error('Global error caught:', error);
+    
+    // Filter out known external errors (like browser extensions)
+    if (error?.message?.includes('profile') || 
+        error?.message?.includes('Cannot read properties of undefined')) {
+      // These are likely from browser extensions, ignore them
+      return;
+    }
+    
+    // For other errors, you might want to send them to a logging service
+    // or show a user-friendly message
+  }
+}
+
 export const appConfig: ApplicationConfig = {
   providers: [
     provideRouter(routes),
+    { provide: ErrorHandler, useClass: GlobalErrorHandler },
     provideFirebaseApp(() => initializeApp(environment.firebase)),
     provideAuth(() => {
       const auth = getAuth();

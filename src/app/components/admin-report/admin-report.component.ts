@@ -7,8 +7,6 @@ import { LoggerService } from '../../services/logger.service';
 import { Investor } from '../../models';
 import { Subscription } from 'rxjs';
 import { Functions } from '@angular/fire/functions';
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
 import * as XLSX from 'xlsx';
 
 interface MonthlyInterest {
@@ -523,10 +521,6 @@ export class AdminReportComponent implements OnInit, OnDestroy {
     }
   }
 
-  // Export report as PDF
-  async exportAsPDF() {
-    alert('PDF export feature is temporarily disabled. Please use Excel export instead.');
-  }
 
   // Export report as Excel
   exportAsExcel() {

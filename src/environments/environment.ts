@@ -21,7 +21,6 @@ export const environment = {
   // Feature flags
   features: {
     enableExcelExport: true,
-    enablePDFExport: false,
     enableNotifications: true,
     enableAutoRefresh: true
   }

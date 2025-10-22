@@ -1,5 +1,5 @@
 
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { Auth, authState, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, User, getIdTokenResult, IdTokenResult } from '@angular/fire/auth';
 import { Observable, of, from, combineLatest } from 'rxjs';
@@ -21,11 +21,11 @@ export class AuthService {
   public readonly isAdmin$: Observable<boolean>;
   public readonly currentUser$: Observable<AppUser | null>;
 
-  constructor(
-    private auth: Auth, 
-    private router: Router,
-    private logger: LoggerService
-  ) {
+  private auth: Auth = inject(Auth);
+  private router: Router = inject(Router);
+  private logger: LoggerService = inject(LoggerService);
+
+  constructor() {
     this.user$ = authState(this.auth);
 
     this.isAdmin$ = this.user$.pipe(
@@ -33,29 +33,21 @@ export class AuthService {
         if (!user) {
           return of(false);
         }
-        // Use setTimeout to ensure Firebase calls happen in the next tick
-        return new Observable<boolean>(observer => {
-          setTimeout(() => {
-            from(getIdTokenResult(user, true)).pipe(
-              map((tokenResult: IdTokenResult) => {
-                try {
-                  return tokenResult.claims['admin'] === true;
-                } catch (error) {
-                  this.logger.warn('Error reading admin claim', error);
-                  return false;
-                }
-              }),
-              catchError(error => {
-                this.logger.warn('Error getting ID token result', error);
-                return of(false);
-              })
-            ).subscribe({
-              next: (result) => observer.next(result),
-              error: (error) => observer.error(error),
-              complete: () => observer.complete()
-            });
-          }, 0);
-        });
+        // Use proper injection context for Firebase calls
+        return from(getIdTokenResult(user, true)).pipe(
+          map((tokenResult: IdTokenResult) => {
+            try {
+              return tokenResult?.claims?.['admin'] === true;
+            } catch (error) {
+              this.logger.warn('Error reading admin claim', error);
+              return false;
+            }
+          }),
+          catchError(error => {
+            this.logger.warn('Error getting ID token result', error);
+            return of(false);
+          })
+        );
       }),
       shareReplay(1)
     );

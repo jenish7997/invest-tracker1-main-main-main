@@ -21,7 +21,6 @@ export const environment = {
   // Feature flags for production
   features: {
     enableExcelExport: true,      // Enable Excel export feature
-    enablePDFExport: false,       // Disable PDF export (temporarily disabled)
     enableNotifications: true,    // Enable user notifications
     enableAutoRefresh: true       // Enable automatic data refresh
   }

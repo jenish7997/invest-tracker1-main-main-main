@@ -6,8 +6,6 @@ import { AuthService } from '../../services/auth.service';
 import { LoggerService } from '../../services/logger.service';
 import { Investor } from '../../models';
 import { Subscription } from 'rxjs';
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
 import * as XLSX from 'xlsx';
 
 interface MonthlyInterest {
@@ -106,19 +104,16 @@ export class ReportComponent implements OnInit, OnDestroy {
   }
 
   private refreshReports() {
-    // Use setTimeout to ensure Firebase calls happen in the next tick
-    setTimeout(() => {
-      if (this.isAdmin) {
-        this.loadAllInvestorsReports();
-      } else {
-        // For non-admin users, we need to get the current user info
-        // This is a bit tricky since we're already in a user subscription
-        // We'll store the current user info to use here
-        if (this.currentUser) {
-          this.loadUserReport(this.currentUser.uid, this.currentUser.displayName);
-        }
+    if (this.isAdmin) {
+      this.loadAllInvestorsReports();
+    } else {
+      // For non-admin users, we need to get the current user info
+      // This is a bit tricky since we're already in a user subscription
+      // We'll store the current user info to use here
+      if (this.currentUser) {
+        this.loadUserReport(this.currentUser.uid, this.currentUser.displayName);
       }
-    }, 0);
+    }
   }
 
 
@@ -134,19 +129,16 @@ export class ReportComponent implements OnInit, OnDestroy {
         
         let reportsGenerated = 0;
         investors.forEach(investor => {
-          // Use setTimeout to ensure Firebase calls happen in the next tick
-          setTimeout(() => {
-            this.generateReport(investor.id, investor.name).then(() => {
-              reportsGenerated++;
-              if (reportsGenerated === investors.length) {
-                this.loading = false;
-              }
-            }).catch(error => {
-              this.logger.error('Error generating report for investor', error);
-              this.error = 'Error loading investor data';
+          this.generateReport(investor.id, investor.name).then(() => {
+            reportsGenerated++;
+            if (reportsGenerated === investors.length) {
               this.loading = false;
-            });
-          }, 0);
+            }
+          }).catch(error => {
+            this.logger.error('Error generating report for investor', error);
+            this.error = 'Error loading investor data';
+            this.loading = false;
+          });
         });
       },
       error: (error) => {
@@ -161,21 +153,24 @@ export class ReportComponent implements OnInit, OnDestroy {
     this.logger.debug('Loading user report', { userName, userId });
     this.logger.debug('Current reports count before loading', { count: this.reports.length });
     
-    // Use setTimeout to ensure Firebase calls happen in the next tick
-    setTimeout(() => {
-      this.generateReport(userId, userName).then(() => {
-        this.logger.debug('User report loaded', { totalReports: this.reports.length });
-        this.loading = false;
-      }).catch(error => {
-        this.logger.error('Error generating user report', error);
-        this.error = 'Error loading user data';
-        this.loading = false;
-      });
-    }, 0);
+    this.generateReport(userId, userName).then(() => {
+      this.logger.debug('User report loaded', { totalReports: this.reports.length });
+      this.loading = false;
+    }).catch(error => {
+      this.logger.error('Error generating user report', error);
+      this.error = 'Error loading user data';
+      this.loading = false;
+    });
   }
 
   async generateReport(investorId: string, investorName: string): Promise<void> {
     try {
+      // Validate inputs
+      if (!investorId || !investorName) {
+        this.logger.error('Invalid investor data', { investorId, investorName });
+        return;
+      }
+      
       // Use the same method as admin report to get raw transactions
       const rawTransactions = await this.investmentService.getTransactionsByInvestor(investorId);
       
@@ -193,12 +188,12 @@ export class ReportComponent implements OnInit, OnDestroy {
 
       transactions.forEach(t => {
         this.logger.debug('Processing transaction', { type: t.type, amount: t.amount, date: t.date });
-        if (t.type === 'invest' || t.type === 'deposit') {
-          principal += t.amount;
-        } else if (t.type === 'withdraw') {
-          principal -= t.amount; // Deduct withdrawals from principal
-        } else if (t.type === 'interest') {
-          totalInterest += t.amount;
+        if (t?.type === 'invest' || t?.type === 'deposit') {
+          principal += t.amount || 0;
+        } else if (t?.type === 'withdraw') {
+          principal -= t.amount || 0; // Deduct withdrawals from principal
+        } else if (t?.type === 'interest') {
+          totalInterest += t.amount || 0;
           
           // Extract month-year from transaction date
           const monthKey = this.getMonthKey(t.date);
@@ -489,10 +484,6 @@ export class ReportComponent implements OnInit, OnDestroy {
     }
   }
 
-  // Export report as PDF
-  async exportAsPDF() {
-    alert('PDF export feature is temporarily disabled. Please use Excel export instead.');
-  }
 
   // Export report as Excel
   exportAsExcel() {
