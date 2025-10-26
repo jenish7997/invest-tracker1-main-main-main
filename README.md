@@ -18,7 +18,7 @@ A comprehensive investment management system built with Angular and Firebase.
 - Angular CLI (`npm install -g @angular/cli`)
 - Firebase CLI (`npm install -g firebase-tools`)
 
-### Development
+### DevelopmenT
 ```bash
 # Install dependencies
 npm install
