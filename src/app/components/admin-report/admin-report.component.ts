@@ -7,7 +7,7 @@ import { LoggerService } from '../../services/logger.service';
 import { Investor } from '../../models';
 import { Subscription } from 'rxjs';
 import { Functions } from '@angular/fire/functions';
-import * as XLSX from 'xlsx';
+import * as ExcelJS from 'exceljs';
 
 interface MonthlyInterest {
   month: string;
@@ -235,22 +235,26 @@ export class AdminReportComponent implements OnInit, OnDestroy {
         }
       });
 
-      // Only include months where the investor actually had interest transactions
+      // Include ALL months that have interest rates configured, even if amount is 0
       const monthlyInterestBreakdown: MonthlyInterest[] = [];
       
-      // Only show months where there were actual interest transactions
-      for (const [monthKey, data] of monthlyInterestMap.entries()) {
-        if (data.amount > 0) { // Only include months with actual interest
+      // Get all months with admin rates
+      const allAdminRateMonths = Array.from(this.adminInterestRates.keys()).sort();
+      
+      for (const monthKey of allAdminRateMonths) {
+        const adminRate = this.adminInterestRates.get(monthKey) || 0;
+        
+        if (adminRate > 0) {
+          // Get the interest amount from map (could be 0 if no balance was present)
+          const data = monthlyInterestMap.get(monthKey) || { amount: 0, rate: adminRate };
+          
           monthlyInterestBreakdown.push({
             month: monthKey,
             amount: data.amount,
-            rate: data.rate
+            rate: data.rate || adminRate
           });
         }
       }
-      
-      // Sort by month
-      monthlyInterestBreakdown.sort((a, b) => a.month.localeCompare(b.month));
 
       // Calculate average return percentage
       const averageReturnPercentage = monthlyInterestBreakdown.length > 0 
@@ -339,67 +343,93 @@ export class AdminReportComponent implements OnInit, OnDestroy {
       });
     }
     
-    // Now add interest at the end of each month where there's a positive balance
+    // Now add interest at the end of each month in chronological order
     const adminRateMonths = Array.from(this.adminInterestRates.keys()).sort();
     
+    // Create a list to collect all interest transactions
+    const interestTransactions: any[] = [];
+    
+    // Calculate interest for each month in chronological order
     for (const monthKey of adminRateMonths) {
       const adminRate = this.adminInterestRates.get(monthKey) || 0;
       
       if (adminRate <= 0) {
-        continue; // Skip months with no interest rate
+        continue;
       }
       
-      // Parse month key (format: YYYY-MM)
       const [year, month] = monthKey.split('-').map(Number);
-      const monthStartDate = new Date(year, month - 1, 1); // month is 0-indexed
-      const monthEndDate = new Date(year, month, 0); // Last day of the month
+      const monthStartDate = new Date(year, month - 1, 1);
+      const monthEndDate = new Date(year, month, 0);
       
-      // Find the balance at the end of this month (after all transactions in the month)
+      // Find the balance at the END of this month for interest calculation
+      // We need the balance BEFORE any withdrawals on the last day of the month
       let balanceAtMonthEnd = 0;
-      let hasTransactionsInMonth = false;
       
-      // Look through all transactions to find the balance at the end of this month
-      // We need to find the last transaction in this month to get the correct balance
+      // Reconstruct the balance by walking through all transactions in order
+      let balance = 0;
+      
+      // Process all non-interest transactions up to the END of this month
+      // (excluding last-day withdrawals when calculating the CURRENT month's interest)
       for (const t of transactionsWithInterest) {
         const transactionDate = new Date(t.date);
+        const isLastDayOfMonth = transactionDate.getDate() === monthEndDate.getDate() && 
+                                 transactionDate.getMonth() === monthEndDate.getMonth() &&
+                                 transactionDate.getFullYear() === monthEndDate.getFullYear();
         
-        if (transactionDate >= monthStartDate && transactionDate <= monthEndDate) {
-          balanceAtMonthEnd = t.balance;
-          hasTransactionsInMonth = true;
+        // Only process transactions on or before this month's end
+        if (transactionDate <= monthEndDate) {
+          if (t.type === 'invest' || t.type === 'deposit') {
+            balance += t.amount;
+          } else if (t.type === 'withdraw') {
+            // For the CURRENT month, exclude last-day withdrawals
+            // For PREVIOUS months, include all withdrawals
+            if (!(transactionDate >= monthStartDate && isLastDayOfMonth)) {
+              balance -= t.amount;
+            }
+          }
         }
       }
       
-      // If there were transactions in this month and we have a positive balance, add interest
-      if (hasTransactionsInMonth && balanceAtMonthEnd > 0) {
-        const interestAmount = balanceAtMonthEnd * adminRate;
+      // Add interest from previous months (this doesn't include current month interest yet)
+      for (const prevInterest of interestTransactions) {
+        const interestDate = new Date(prevInterest.date);
+        if (interestDate <= monthEndDate) {
+          balance += prevInterest.amount;
+        }
+      }
+      
+      balanceAtMonthEnd = balance;
+      
+      const interestAmount = balanceAtMonthEnd * adminRate;
+      
+      // Create interest transaction for the last day of the month
+      const interestTransaction = {
+        id: `admin_interest_${monthKey}`,
+        investorId: sortedTransactions[0]?.investorId || '',
+        investorName: sortedTransactions[0]?.investorName || '',
+        date: monthEndDate,
+        type: 'interest',
+        amount: interestAmount,
+        balance: balanceAtMonthEnd + interestAmount,
+        description: `Interest (${(adminRate * 100).toFixed(1)}%)`
+      };
+      
+      interestTransactions.push(interestTransaction);
+      transactionsWithInterest.push(interestTransaction);
+      
+      // Update the balance for all subsequent non-interest transactions
+      for (let i = 0; i < transactionsWithInterest.length; i++) {
+        const t = transactionsWithInterest[i];
+        const transactionDate = new Date(t.date);
         
-        // Create interest transaction for the last day of the month
-        const interestTransaction = {
-          id: `admin_interest_${monthKey}`,
-          investorId: sortedTransactions[0]?.investorId || '',
-          investorName: sortedTransactions[0]?.investorName || '',
-          date: monthEndDate,
-          type: 'interest',
-          amount: interestAmount,
-          balance: balanceAtMonthEnd + interestAmount, // Balance after adding interest
-          description: `Interest (${(adminRate * 100).toFixed(1)}%)`
-        };
+        // Skip interest transactions
+        if (t.type === 'interest') continue;
         
-        transactionsWithInterest.push(interestTransaction);
-        
-        // Update the balance for all subsequent transactions
-        // We need to update the balance for all transactions that come after this month
-        for (let i = 0; i < transactionsWithInterest.length; i++) {
-          const t = transactionsWithInterest[i];
-          const transactionDate = new Date(t.date);
-          
-          // If this transaction is after the current month, add the interest to its balance
-          if (transactionDate > monthEndDate) {
-            transactionsWithInterest[i] = {
-              ...t,
-              balance: t.balance + interestAmount
-            };
-          }
+        if (transactionDate > monthEndDate) {
+          transactionsWithInterest[i] = {
+            ...t,
+            balance: t.balance + interestAmount
+          };
         }
       }
     }
@@ -523,7 +553,7 @@ export class AdminReportComponent implements OnInit, OnDestroy {
 
 
   // Export report as Excel
-  exportAsExcel() {
+  async exportAsExcel() {
     try {
       // Check if reports are still loading
       if (this.loading) {
@@ -537,25 +567,36 @@ export class AdminReportComponent implements OnInit, OnDestroy {
         return;
       }
 
-      const wb = XLSX.utils.book_new();
+      const workbook = new ExcelJS.Workbook();
       
       // Create a sheet for each investor
       this.reports.forEach((report, index) => {
-        // Prepare data for this investor
-        const investorData = [
-          ['ADMIN INVESTMENT REPORT'],
-          ['Investor Name', report.investorName],
-          ['Report Generated', new Date().toLocaleDateString()],
-          [],
-          ['FINANCIAL SUMMARY'],
-          ['Principal Amount', report.principal, '₹'],
-          ['Total Interest Earned', report.totalInterest, '₹'],
-          ['Current Grown Capital', report.grownCapital, '₹'],
-          ['Average Return Rate', (report.averageReturnPercentage * 100).toFixed(2) + '%'],
-          [],
-          ['TRANSACTION HISTORY'],
-          ['Date', 'Transaction Type', 'Principal Amount', 'Interest Amount', 'Withdrawal Amount', 'Running Balance']
+        const sheetName = `${index + 1}. ${report.investorName.substring(0, 25).replace(/[:\\/?*\[\]]/g, '')}`;
+        const worksheet = workbook.addWorksheet(sheetName);
+        
+        // Set column widths
+        worksheet.columns = [
+          { width: 12 }, // Date
+          { width: 18 }, // Transaction Type
+          { width: 18 }, // Principal Amount
+          { width: 18 }, // Interest Amount
+          { width: 18 }, // Withdrawal Amount
+          { width: 20 }  // Running Balance
         ];
+        
+        // Add header data
+        worksheet.addRow(['ADMIN INVESTMENT REPORT']);
+        worksheet.addRow(['Investor Name', report.investorName]);
+        worksheet.addRow(['Report Generated', new Date().toLocaleDateString()]);
+        worksheet.addRow([]);
+        worksheet.addRow(['FINANCIAL SUMMARY']);
+        worksheet.addRow(['Principal Amount', report.principal, '₹']);
+        worksheet.addRow(['Total Interest Earned', report.totalInterest, '₹']);
+        worksheet.addRow(['Current Grown Capital', report.grownCapital, '₹']);
+        worksheet.addRow(['Average Return Rate', (report.averageReturnPercentage * 100).toFixed(2) + '%']);
+        worksheet.addRow([]);
+        worksheet.addRow(['TRANSACTION HISTORY']);
+        worksheet.addRow(['Date', 'Transaction Type', 'Principal Amount', 'Interest Amount', 'Withdrawal Amount', 'Running Balance']);
 
         // Add transaction data
         report.transactions.forEach(t => {
@@ -563,7 +604,7 @@ export class AdminReportComponent implements OnInit, OnDestroy {
           const interestAmount = t.type === 'interest' ? t.amount : '';
           const withdrawalAmount = t.type === 'withdraw' ? t.amount : '';
           
-          investorData.push([
+          worksheet.addRow([
             this.formatDate(t.date),
             t.type.toUpperCase(),
             principalAmount ? '₹' + principalAmount.toLocaleString() : '',
@@ -572,45 +613,36 @@ export class AdminReportComponent implements OnInit, OnDestroy {
             '₹' + t.balance.toLocaleString()
           ]);
         });
-
-        // Create worksheet
-        const ws = XLSX.utils.aoa_to_sheet(investorData);
-        
-        // Set column widths
-        ws['!cols'] = [
-          { wch: 12 }, // Date
-          { wch: 18 }, // Transaction Type
-          { wch: 18 }, // Principal Amount
-          { wch: 18 }, // Interest Amount
-          { wch: 18 }, // Withdrawal Amount
-          { wch: 20 }  // Running Balance
-        ];
-
-        // Add sheet to workbook
-        const sheetName = `${index + 1}. ${report.investorName.substring(0, 25).replace(/[:\\/?*\[\]]/g, '')}`;
-        XLSX.utils.book_append_sheet(wb, ws, sheetName);
       });
 
       // Add summary sheet if we have multiple investors
       if (this.reports.length > 1) {
-        const summaryData = [
-          ['TOTAL PORTFOLIO SUMMARY'],
-          ['Report Generated', new Date().toLocaleDateString()],
-          [],
-          ['OVERALL FINANCIALS'],
-          ['Total Principal Invested', this.totalPrincipal, '₹'],
-          ['Total Interest Earned', this.totalInterest, '₹'],
-          ['Total Grown Capital', this.totalGrownCapital, '₹'],
-          [],
-          ['INVESTOR BREAKDOWN'],
-          ['Investor Name', 'Principal Amount', 'Interest Earned', 'Grown Capital', 'Return %']
+        const summarySheet = workbook.addWorksheet('Portfolio Summary');
+        
+        summarySheet.columns = [
+          { width: 25 }, // Investor Name
+          { width: 18 }, // Principal
+          { width: 18 }, // Interest
+          { width: 18 }, // Grown Capital
+          { width: 12 }  // Return %
         ];
+        
+        summarySheet.addRow(['TOTAL PORTFOLIO SUMMARY']);
+        summarySheet.addRow(['Report Generated', new Date().toLocaleDateString()]);
+        summarySheet.addRow([]);
+        summarySheet.addRow(['OVERALL FINANCIALS']);
+        summarySheet.addRow(['Total Principal Invested', this.totalPrincipal, '₹']);
+        summarySheet.addRow(['Total Interest Earned', this.totalInterest, '₹']);
+        summarySheet.addRow(['Total Grown Capital', this.totalGrownCapital, '₹']);
+        summarySheet.addRow([]);
+        summarySheet.addRow(['INVESTOR BREAKDOWN']);
+        summarySheet.addRow(['Investor Name', 'Principal Amount', 'Interest Earned', 'Grown Capital', 'Return %']);
 
         this.reports.forEach(report => {
           const returnPercentage = report.principal > 0 ? 
             ((report.grownCapital - report.principal) / report.principal * 100).toFixed(2) + '%' : '0%';
           
-          summaryData.push([
+          summarySheet.addRow([
             report.investorName,
             '₹' + report.principal.toLocaleString(),
             '₹' + report.totalInterest.toLocaleString(),
@@ -618,22 +650,18 @@ export class AdminReportComponent implements OnInit, OnDestroy {
             returnPercentage
           ]);
         });
-
-        const summaryWs = XLSX.utils.aoa_to_sheet(summaryData);
-        summaryWs['!cols'] = [
-          { wch: 25 }, // Investor Name
-          { wch: 18 }, // Principal
-          { wch: 18 }, // Interest
-          { wch: 18 }, // Grown Capital
-          { wch: 12 }  // Return %
-        ];
-
-        XLSX.utils.book_append_sheet(wb, summaryWs, 'Portfolio Summary');
       }
 
       // Save file
       const fileName = 'Admin_Investment_Report.xlsx';
-      XLSX.writeFile(wb, fileName);
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = window.URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = fileName;
+      anchor.click();
+      window.URL.revokeObjectURL(url);
       
       alert(`Excel exported successfully with ${this.reports.length} investors!`);
       

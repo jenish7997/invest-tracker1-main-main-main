@@ -70,8 +70,8 @@ export class InterestComponent implements OnInit {
 
     try {
       const result: HttpsCallableResult = await applyInterestFn({ monthKey, rate: decimalRate });
-      this.successMessage = (result.data as any).message || 'User interest applied successfully!';
-      this.successMessage += ' Please refresh your reports to see the updated calculations.';
+      // Set a simple success message without the notification details
+      this.successMessage = 'Interest rate applied successfully!';
 
       this.rateForm.reset();
 
@@ -127,8 +127,8 @@ export class InterestComponent implements OnInit {
         newRate: newRate 
       });
       
-      this.successMessage = (result.data as any).message || 'User interest rate updated successfully!';
-      this.successMessage += ' Please refresh your reports to see the updated calculations.';
+      // Set a simple success message without the notification details
+      this.successMessage = 'Interest rate updated successfully!';
 
       // Update the local rates array immediately
       this.rates[index].rate = newRate;
