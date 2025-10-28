@@ -210,24 +210,39 @@ export class ReportComponent implements OnInit, OnDestroy {
         }
       });
 
-      // Include ALL months that have interest rates configured, even if amount is 0
+      // Find the first transaction date to only show months from that date onwards
+      const firstTransaction = rawTransactions
+        .filter(t => t.type === 'invest' || t.type === 'deposit')
+        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
+      
+      const firstTransactionMonth = firstTransaction ? this.getMonthKey(firstTransaction.date) : null;
+      
+      // Include months that have interest rates configured, only from first transaction onwards
       const monthlyInterestBreakdown: MonthlyInterest[] = [];
       
       // Get all months with user rates
       const allUserRateMonths = Array.from(this.interestRates.keys()).sort();
       
       for (const monthKey of allUserRateMonths) {
+        // Skip months before the first transaction
+        if (firstTransactionMonth && monthKey < firstTransactionMonth) {
+          continue;
+        }
+        
         const userRate = this.interestRates.get(monthKey) || 0;
         
         if (userRate > 0) {
-          // Get the interest amount from map (could be 0 if no balance was present)
-          const data = monthlyInterestMap.get(monthKey) || { amount: 0, rate: userRate };
+          // Get the interest amount from map - only if it exists AND has amount > 0
+          const data = monthlyInterestMap.get(monthKey);
           
-          monthlyInterestBreakdown.push({
-            month: monthKey,
-            amount: data.amount,
-            rate: data.rate || userRate
-          });
+          // Only add to breakdown if there's actual interest earned
+          if (data && data.amount > 0) {
+            monthlyInterestBreakdown.push({
+              month: monthKey,
+              amount: data.amount,
+              rate: data.rate || userRate
+            });
+          }
         }
       }
 
@@ -372,6 +387,10 @@ export class ReportComponent implements OnInit, OnDestroy {
       return dateCompare;
     });
     
+    // Find the first transaction date
+    const firstTransactionDate = sortedTransactions.length > 0 ? sortedTransactions[0].date : null;
+    const firstTransactionMonth = firstTransactionDate ? this.getMonthKey(firstTransactionDate) : null;
+    
     const transactionsWithInterest = [];
     let runningBalance = 0;
     
@@ -398,6 +417,11 @@ export class ReportComponent implements OnInit, OnDestroy {
     
     // Calculate interest for each month in chronological order
     for (const monthKey of userRateMonths) {
+      // Skip months before the first transaction
+      if (firstTransactionMonth && monthKey < firstTransactionMonth) {
+        continue;
+      }
+      
       const userRate = this.interestRates.get(monthKey) || 0;
       
       if (userRate <= 0) {

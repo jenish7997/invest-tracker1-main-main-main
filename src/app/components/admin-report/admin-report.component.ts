@@ -235,24 +235,39 @@ export class AdminReportComponent implements OnInit, OnDestroy {
         }
       });
 
-      // Include ALL months that have interest rates configured, even if amount is 0
+      // Find the first transaction date to only show months from that date onwards
+      const firstTransaction = rawTransactions
+        .filter(t => t.type === 'invest' || t.type === 'deposit')
+        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
+      
+      const firstTransactionMonth = firstTransaction ? this.getMonthKey(firstTransaction.date) : null;
+      
+      // Include months that have interest rates configured, only from first transaction onwards
       const monthlyInterestBreakdown: MonthlyInterest[] = [];
       
       // Get all months with admin rates
       const allAdminRateMonths = Array.from(this.adminInterestRates.keys()).sort();
       
       for (const monthKey of allAdminRateMonths) {
+        // Skip months before the first transaction
+        if (firstTransactionMonth && monthKey < firstTransactionMonth) {
+          continue;
+        }
+        
         const adminRate = this.adminInterestRates.get(monthKey) || 0;
         
         if (adminRate > 0) {
-          // Get the interest amount from map (could be 0 if no balance was present)
-          const data = monthlyInterestMap.get(monthKey) || { amount: 0, rate: adminRate };
+          // Get the interest amount from map
+          const data = monthlyInterestMap.get(monthKey);
           
-          monthlyInterestBreakdown.push({
-            month: monthKey,
-            amount: data.amount,
-            rate: data.rate || adminRate
-          });
+          // Only add if there's actual data (avoid ₹0 entries)
+          if (data && data.amount > 0) {
+            monthlyInterestBreakdown.push({
+              month: monthKey,
+              amount: data.amount,
+              rate: data.rate || adminRate
+            });
+          }
         }
       }
 
@@ -325,6 +340,10 @@ export class AdminReportComponent implements OnInit, OnDestroy {
       return dateCompare;
     });
     
+    // Find the first transaction date
+    const firstTransactionDate = sortedTransactions.length > 0 ? sortedTransactions[0].date : null;
+    const firstTransactionMonth = firstTransactionDate ? this.getMonthKey(firstTransactionDate) : null;
+    
     const transactionsWithInterest = [];
     let runningBalance = 0;
     
@@ -351,6 +370,11 @@ export class AdminReportComponent implements OnInit, OnDestroy {
     
     // Calculate interest for each month in chronological order
     for (const monthKey of adminRateMonths) {
+      // Skip months before the first transaction
+      if (firstTransactionMonth && monthKey < firstTransactionMonth) {
+        continue;
+      }
+      
       const adminRate = this.adminInterestRates.get(monthKey) || 0;
       
       if (adminRate <= 0) {
