@@ -174,8 +174,12 @@ export class ReportComponent implements OnInit, OnDestroy {
       // Use the same method as admin report to get raw transactions
       const rawTransactions = await this.investmentService.getTransactionsByInvestor(investorId);
       
+      // Filter to only include user fund account transactions (source !== 'admin')
+      // This includes transactions with source='user' or source undefined (backward compatibility)
+      const userTransactions = rawTransactions.filter(t => t.source !== 'admin');
+      
       // Filter out existing interest transactions to prevent duplicates
-      const nonInterestTransactions = rawTransactions.filter(t => t.type !== 'interest');
+      const nonInterestTransactions = userTransactions.filter(t => t.type !== 'interest');
       
       // Recalculate interest using user rates to ensure accuracy
       const transactions = this.calculateInterestUsingUserRates(nonInterestTransactions);
@@ -211,7 +215,7 @@ export class ReportComponent implements OnInit, OnDestroy {
       });
 
       // Find the first transaction date to only show months from that date onwards
-      const firstTransaction = rawTransactions
+      const firstTransaction = userTransactions
         .filter(t => t.type === 'invest' || t.type === 'deposit')
         .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
       

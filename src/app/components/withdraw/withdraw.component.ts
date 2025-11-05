@@ -2,6 +2,8 @@ import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { InvestmentService } from '../../services/investment.service';
+import { NotificationService } from '../../services/notification.service';
+import { LoggerService } from '../../services/logger.service';
 import { Investor, Transaction } from '../../models';
 
 @Component({
@@ -15,7 +17,12 @@ export class WithdrawComponent implements OnInit {
   investors: Investor[] = [];
   transactionForm!: FormGroup;
 
-  constructor(private fb: FormBuilder, private svc: InvestmentService) {}
+  constructor(
+    private fb: FormBuilder, 
+    private svc: InvestmentService,
+    private notificationService: NotificationService,
+    private logger: LoggerService
+  ) {}
 
   ngOnInit() {
     this.transactionForm = this.fb.group({
@@ -39,7 +46,8 @@ export class WithdrawComponent implements OnInit {
       investorName: investor ? investor.name : '',
       amount: formData.amount,
       date: new Date(formData.date),
-      type: 'withdraw'
+      type: 'withdraw',
+      source: 'user' // Mark as user withdrawal transaction
     };
 
     this.svc.addTransaction(transactionData)
@@ -49,6 +57,11 @@ export class WithdrawComponent implements OnInit {
           amount: null,
           date: ''
         });
+        // Notify that a transaction was added
+        this.notificationService.notifyTransactionAdded();
+      })
+      .catch(error => {
+        this.logger.error('Error saving transaction', error);
       });
   } else {
     this.transactionForm.markAllAsTouched();

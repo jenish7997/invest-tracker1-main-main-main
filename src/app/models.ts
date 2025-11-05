@@ -6,6 +6,7 @@ export interface Transaction {
   type: 'invest' | 'withdraw' | 'deposit' | 'interest';
   amount: number;
   createdAt?: any; // Firestore Timestamp for precise ordering
+  source?: 'admin' | 'user'; // Track whether transaction comes from admin or user fund account
 }
 
 export interface MonthlyRate {

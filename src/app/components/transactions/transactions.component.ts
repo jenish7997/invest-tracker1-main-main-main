@@ -79,4 +79,17 @@ export class TransactionsComponent implements OnInit {
     }
   }
 
+  getTransactionSourceLabel(transaction: Transaction): string {
+    const source = transaction.source || 'user'; // Default to 'user' for backward compatibility
+    const type = transaction.type.toLowerCase();
+    
+    if (type === 'invest' || type === 'deposit') {
+      return source === 'admin' ? 'Admin Invest' : 'User Invest';
+    } else if (type === 'withdraw') {
+      return source === 'admin' ? 'Admin Withdraw' : 'User Withdraw';
+    }
+    
+    return transaction.type.charAt(0).toUpperCase() + transaction.type.slice(1);
+  }
+
 }

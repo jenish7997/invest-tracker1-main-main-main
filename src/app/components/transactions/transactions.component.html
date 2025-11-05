@@ -57,6 +57,10 @@
                 <span class="material-icons">category</span>
                 Type
               </th>
+              <th class="source-column">
+                <span class="material-icons">source</span>
+                Source
+              </th>
               <th class="amount-column">
                 <span class="material-icons">attach_money</span>
                 Amount
@@ -73,6 +77,11 @@
               <td class="type-cell">
                 <span class="type-badge" [ngClass]="r.type.toLowerCase()">
                   {{ r.type }}
+                </span>
+              </td>
+              <td class="source-cell">
+                <span class="source-badge" [ngClass]="r.source === 'admin' ? 'admin' : 'user'">
+                  {{ getTransactionSourceLabel(r) }}
                 </span>
               </td>
               <td class="amount-cell" [ngClass]="r.type === 'invest' || r.type === 'deposit' || r.type === 'interest' ? 'positive' : 'negative'">
@@ -104,6 +113,9 @@
             <div class="transaction-type-mobile">
               <span class="type-badge" [ngClass]="r.type.toLowerCase()">
                 {{ r.type }}
+              </span>
+              <span class="source-badge" [ngClass]="r.source === 'admin' ? 'admin' : 'user'">
+                {{ getTransactionSourceLabel(r) }}
               </span>
             </div>
             <div class="transaction-date-mobile">

@@ -7,13 +7,13 @@ import { LoggerService } from '../../services/logger.service';
 import { Investor, Transaction } from '../../models';
 
 @Component({
-  selector: 'app-addmoney',
+  selector: 'app-admin-withdraw',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule],
-  templateUrl: './addmoney.component.html',
-  styleUrls: ['./addmoney.component.css']
+  templateUrl: './admin-withdraw.component.html',
+  styleUrls: ['./admin-withdraw.component.css']
 })
-export class AddmoneyComponent implements OnInit {
+export class AdminWithdrawComponent implements OnInit {
   investors: Investor[] = [];
   transactionForm!: FormGroup;
 
@@ -46,8 +46,8 @@ export class AddmoneyComponent implements OnInit {
       investorName: investor ? investor.name : '',
       amount: formData.amount,
       date: new Date(formData.date),
-      type: 'invest',
-      source: 'user' // Mark as user fund account transaction
+      type: 'withdraw',
+      source: 'admin' // Mark as admin withdrawal transaction
     };
 
     this.svc.addTransaction(transactionData)
@@ -69,3 +69,4 @@ export class AddmoneyComponent implements OnInit {
 }
 
 }
+

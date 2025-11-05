@@ -2,6 +2,7 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { InvestmentService } from '../../services/investment.service';
 import { AdminInterestService } from '../../services/admin-interest.service';
+import { UserInterestService } from '../../services/user-interest.service';
 import { AuthService } from '../../services/auth.service';
 import { LoggerService } from '../../services/logger.service';
 import { Investor } from '../../models';
@@ -23,6 +24,7 @@ interface ReportData {
   grownCapital: number;
   monthlyInterestBreakdown: MonthlyInterest[];
   averageReturnPercentage: number;
+  grownCapitalDifference?: number; // Difference between admin and user grown capital
 }
 
 @Component({
@@ -39,9 +41,11 @@ export class AdminReportComponent implements OnInit, OnDestroy {
   error: string = '';
   isRecalculating: boolean = false;
   adminInterestRates: Map<string, number> = new Map(); // Store ADMIN rates by monthKey - ISOLATED from user rates
+  userInterestRates: Map<string, number> = new Map(); // Store USER rates for calculating difference
   private currentUser: any = null; // Store current user info
   private userSubscription?: Subscription;
   private ratesSubscription?: Subscription;
+  private userRatesSubscription?: Subscription;
   
   // Total aggregation properties
   totalPrincipal: number = 0;
@@ -52,12 +56,36 @@ export class AdminReportComponent implements OnInit, OnDestroy {
   constructor(
     private investmentService: InvestmentService,
     private adminInterestService: AdminInterestService,
+    private userInterestService: UserInterestService,
     private authService: AuthService,
     private logger: LoggerService,
     private functions: Functions
   ) { }
 
   ngOnInit() {
+    // Subscribe to user interest rate changes (for calculating difference)
+    this.userRatesSubscription = this.userInterestService.listUserRates().subscribe({
+      next: (rates) => {
+        this.userInterestRates.clear();
+        rates.forEach(rate => {
+          this.userInterestRates.set(rate.monthKey, rate.rate);
+        });
+        this.logger.debug('User interest rates updated for difference calculation', this.userInterestRates);
+        
+        // Refresh reports if user is already loaded
+        if (this.currentUser) {
+          this.refreshReports();
+        }
+      },
+      error: (error) => {
+        this.logger.error('Error loading user interest rates', error);
+        // Still refresh reports even if rates failed
+        if (this.currentUser) {
+          this.refreshReports();
+        }
+      }
+    });
+
     // Subscribe to admin interest rate changes (using adminRates collection)
     this.ratesSubscription = this.adminInterestService.listAdminRates().subscribe({
       next: (rates) => {
@@ -120,6 +148,9 @@ export class AdminReportComponent implements OnInit, OnDestroy {
     }
     if (this.ratesSubscription) {
       this.ratesSubscription.unsubscribe();
+    }
+    if (this.userRatesSubscription) {
+      this.userRatesSubscription.unsubscribe();
     }
   }
 
@@ -204,8 +235,11 @@ export class AdminReportComponent implements OnInit, OnDestroy {
       // Get raw transactions without any interest calculations
       const rawTransactions = await this.investmentService.getTransactionsByInvestor(investorId);
       
+      // Filter to only include admin fund account transactions (source === 'admin')
+      const adminTransactions = rawTransactions.filter(t => t.source === 'admin');
+      
       // Calculate interest using ONLY admin rates
-      const transactionsWithAdminInterest = this.calculateInterestUsingAdminRates(rawTransactions);
+      const transactionsWithAdminInterest = this.calculateInterestUsingAdminRates(adminTransactions);
       
       let principal = 0;
       let totalInterest = 0;
@@ -236,7 +270,7 @@ export class AdminReportComponent implements OnInit, OnDestroy {
       });
 
       // Find the first transaction date to only show months from that date onwards
-      const firstTransaction = rawTransactions
+      const firstTransaction = adminTransactions
         .filter(t => t.type === 'invest' || t.type === 'deposit')
         .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
       
@@ -278,6 +312,10 @@ export class AdminReportComponent implements OnInit, OnDestroy {
 
       const grownCapital = transactionsWithAdminInterest.length > 0 ? transactionsWithAdminInterest[transactionsWithAdminInterest.length - 1].balance : 0;
 
+      // Calculate user report grown capital for difference
+      const userGrownCapital = await this.calculateUserGrownCapital(investorId);
+      const grownCapitalDifference = grownCapital - userGrownCapital;
+
       // Check if report for this investor already exists to prevent duplicates
       const existingReportIndex = this.reports.findIndex(r => r.investorName === investorName);
       const newReport = {
@@ -287,7 +325,8 @@ export class AdminReportComponent implements OnInit, OnDestroy {
         totalInterest: totalInterest,
         grownCapital: grownCapital,
         monthlyInterestBreakdown: monthlyInterestBreakdown,
-        averageReturnPercentage: averageReturnPercentage
+        averageReturnPercentage: averageReturnPercentage,
+        grownCapitalDifference: grownCapitalDifference
       };
 
       if (existingReportIndex >= 0) {
@@ -318,6 +357,199 @@ export class AdminReportComponent implements OnInit, OnDestroy {
       totalInterest: this.totalInterest,
       totalGrownCapital: this.totalGrownCapital
     });
+  }
+
+  // Calculate user report grown capital for comparison
+  private async calculateUserGrownCapital(investorId: string): Promise<number> {
+    try {
+      // Get all transactions for the investor
+      const rawTransactions = await this.investmentService.getTransactionsByInvestor(investorId);
+      
+      // Filter to only include user fund account transactions (source !== 'admin')
+      const userTransactions = rawTransactions.filter(t => t.source !== 'admin');
+      
+      if (userTransactions.length === 0) {
+        return 0;
+      }
+      
+      // Calculate interest using user rates
+      const transactionsWithUserInterest = this.calculateInterestUsingUserRates(userTransactions);
+      
+      // Return the final grown capital (last transaction balance)
+      return transactionsWithUserInterest.length > 0 
+        ? transactionsWithUserInterest[transactionsWithUserInterest.length - 1].balance 
+        : 0;
+    } catch (error) {
+      this.logger.error('Error calculating user grown capital', error);
+      return 0;
+    }
+  }
+
+  // Method to calculate interest using user rates (for difference calculation)
+  private calculateInterestUsingUserRates(rawTransactions: any[]): any[] {
+    // Filter out existing interest transactions to avoid duplicates
+    const nonInterestTransactions = rawTransactions.filter(t => t.type !== 'interest');
+    
+    if (nonInterestTransactions.length === 0) {
+      return [];
+    }
+    
+    // Sort all transactions by date and then by createdAt for same-day transactions
+    const sortedTransactions = [...nonInterestTransactions].sort((a, b) => {
+      const dateCompare = new Date(a.date).getTime() - new Date(b.date).getTime();
+      if (dateCompare === 0) {
+        const createdAtA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const createdAtB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return createdAtA - createdAtB;
+      }
+      return dateCompare;
+    });
+    
+    // Find the first transaction date
+    const firstTransactionDate = sortedTransactions.length > 0 ? sortedTransactions[0].date : null;
+    const firstTransactionMonth = firstTransactionDate ? this.getMonthKey(firstTransactionDate) : null;
+    
+    const transactionsWithInterest = [];
+    let runningBalance = 0;
+    
+    // Process all transactions chronologically
+    for (const transaction of sortedTransactions) {
+      if (transaction.type === 'invest' || transaction.type === 'deposit') {
+        runningBalance += transaction.amount;
+      } else if (transaction.type === 'withdraw') {
+        runningBalance -= transaction.amount;
+      }
+      
+      // Add the transaction with updated balance
+      transactionsWithInterest.push({ 
+        ...transaction, 
+        balance: runningBalance 
+      });
+    }
+    
+    // Now add interest at the end of each month in chronological order
+    const userRateMonths = Array.from(this.userInterestRates.keys()).sort();
+    
+    // Create a list to collect all interest transactions
+    const interestTransactions: any[] = [];
+    
+    // Calculate interest for each month in chronological order
+    for (const monthKey of userRateMonths) {
+      // Skip months before the first transaction
+      if (firstTransactionMonth && monthKey < firstTransactionMonth) {
+        continue;
+      }
+      
+      const userRate = this.userInterestRates.get(monthKey) || 0;
+      
+      if (userRate <= 0) {
+        continue; // Skip months with no interest rate
+      }
+      
+      const [year, month] = monthKey.split('-').map(Number);
+      const monthStartDate = new Date(year, month - 1, 1);
+      const monthEndDate = new Date(year, month, 0);
+      
+      // Find the balance at the END of this month for interest calculation
+      let balanceAtMonthEnd = 0;
+      
+      // Reconstruct the balance by walking through all transactions in order
+      // Start fresh from zero for accurate calculation
+      let balance = 0;
+      
+      // Normalize dates for comparison (set to start of day to avoid time issues)
+      const monthStartNormalized = new Date(year, month - 1, 1, 0, 0, 0, 0);
+      const monthEndNormalized = new Date(year, month, 0, 23, 59, 59, 999);
+      
+      // Process all non-interest transactions up to the END of this month
+      // Use sortedTransactions instead of transactionsWithInterest for accurate calculation
+      for (const t of sortedTransactions) {
+        const transactionDate = new Date(t.date);
+        // Normalize transaction date to start of day for comparison
+        const transactionDateNormalized = new Date(transactionDate.getFullYear(), transactionDate.getMonth(), transactionDate.getDate(), 0, 0, 0, 0);
+        
+        const isLastDayOfMonth = transactionDateNormalized.getDate() === monthEndNormalized.getDate() && 
+                                 transactionDateNormalized.getMonth() === monthEndNormalized.getMonth() &&
+                                 transactionDateNormalized.getFullYear() === monthEndNormalized.getFullYear();
+        
+        // Only process transactions on or before this month's end
+        if (transactionDateNormalized <= monthEndNormalized) {
+          if (t.type === 'invest' || t.type === 'deposit') {
+            balance += t.amount;
+          } else if (t.type === 'withdraw') {
+            // For the CURRENT month, exclude last-day withdrawals
+            if (!(transactionDateNormalized >= monthStartNormalized && isLastDayOfMonth)) {
+              balance -= t.amount;
+            }
+          }
+        }
+      }
+      
+      // Add interest from previous months
+      for (const prevInterest of interestTransactions) {
+        const interestDate = new Date(prevInterest.date);
+        // Normalize interest date for comparison
+        const interestDateNormalized = new Date(interestDate.getFullYear(), interestDate.getMonth(), interestDate.getDate(), 0, 0, 0, 0);
+        if (interestDateNormalized <= monthEndNormalized) {
+          balance += prevInterest.amount;
+        }
+      }
+      
+      // Round balance to 2 decimal places before calculating interest
+      balanceAtMonthEnd = Math.round(balance * 100) / 100;
+      
+      // Calculate interest amount and round to 2 decimal places
+      // Use exact calculation: balance × rate, then round
+      const interestAmount = Math.round(balanceAtMonthEnd * userRate * 100) / 100;
+      
+      // Create interest transaction for the last day of the month
+      // Round the balance to 2 decimal places
+      const newBalance = Math.round((balanceAtMonthEnd + interestAmount) * 100) / 100;
+      const interestTransaction = {
+        id: `user_interest_${monthKey}`,
+        investorId: sortedTransactions[0]?.investorId || '',
+        investorName: sortedTransactions[0]?.investorName || '',
+        date: monthEndDate,
+        type: 'interest',
+        amount: interestAmount,
+        balance: newBalance,
+        description: `Interest (${(userRate * 100).toFixed(1)}%)`
+      };
+      
+      interestTransactions.push(interestTransaction);
+      transactionsWithInterest.push(interestTransaction);
+      
+      // Update the balance for all subsequent non-interest transactions
+      for (let i = 0; i < transactionsWithInterest.length; i++) {
+        const t = transactionsWithInterest[i];
+        const transactionDate = new Date(t.date);
+        
+        // Skip interest transactions
+        if (t.type === 'interest') continue;
+        
+        if (transactionDate > monthEndDate) {
+          // Round the updated balance to 2 decimal places
+          const updatedBalance = Math.round((t.balance + interestAmount) * 100) / 100;
+          transactionsWithInterest[i] = {
+            ...t,
+            balance: updatedBalance
+          };
+        }
+      }
+    }
+    
+    // Sort all transactions by date and then by createdAt for same-day transactions
+    transactionsWithInterest.sort((a, b) => {
+      const dateCompare = new Date(a.date).getTime() - new Date(b.date).getTime();
+      if (dateCompare === 0) {
+        const createdAtA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const createdAtB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return createdAtA - createdAtB;
+      }
+      return dateCompare;
+    });
+    
+    return transactionsWithInterest;
   }
 
   // Method to calculate interest using ONLY admin rates
@@ -390,24 +622,32 @@ export class AdminReportComponent implements OnInit, OnDestroy {
       let balanceAtMonthEnd = 0;
       
       // Reconstruct the balance by walking through all transactions in order
+      // Start fresh from zero for accurate calculation
       let balance = 0;
+      
+      // Normalize dates for comparison (set to start of day to avoid time issues)
+      const monthStartNormalized = new Date(year, month - 1, 1, 0, 0, 0, 0);
+      const monthEndNormalized = new Date(year, month, 0, 23, 59, 59, 999);
       
       // Process all non-interest transactions up to the END of this month
       // (excluding last-day withdrawals when calculating the CURRENT month's interest)
-      for (const t of transactionsWithInterest) {
+      for (const t of sortedTransactions) {
         const transactionDate = new Date(t.date);
-        const isLastDayOfMonth = transactionDate.getDate() === monthEndDate.getDate() && 
-                                 transactionDate.getMonth() === monthEndDate.getMonth() &&
-                                 transactionDate.getFullYear() === monthEndDate.getFullYear();
+        // Normalize transaction date to start of day for comparison
+        const transactionDateNormalized = new Date(transactionDate.getFullYear(), transactionDate.getMonth(), transactionDate.getDate(), 0, 0, 0, 0);
+        
+        const isLastDayOfMonth = transactionDateNormalized.getDate() === monthEndNormalized.getDate() && 
+                                 transactionDateNormalized.getMonth() === monthEndNormalized.getMonth() &&
+                                 transactionDateNormalized.getFullYear() === monthEndNormalized.getFullYear();
         
         // Only process transactions on or before this month's end
-        if (transactionDate <= monthEndDate) {
+        if (transactionDateNormalized <= monthEndNormalized) {
           if (t.type === 'invest' || t.type === 'deposit') {
             balance += t.amount;
           } else if (t.type === 'withdraw') {
             // For the CURRENT month, exclude last-day withdrawals
             // For PREVIOUS months, include all withdrawals
-            if (!(transactionDate >= monthStartDate && isLastDayOfMonth)) {
+            if (!(transactionDateNormalized >= monthStartNormalized && isLastDayOfMonth)) {
               balance -= t.amount;
             }
           }
@@ -417,16 +657,23 @@ export class AdminReportComponent implements OnInit, OnDestroy {
       // Add interest from previous months (this doesn't include current month interest yet)
       for (const prevInterest of interestTransactions) {
         const interestDate = new Date(prevInterest.date);
-        if (interestDate <= monthEndDate) {
+        // Normalize interest date for comparison
+        const interestDateNormalized = new Date(interestDate.getFullYear(), interestDate.getMonth(), interestDate.getDate(), 0, 0, 0, 0);
+        if (interestDateNormalized <= monthEndNormalized) {
           balance += prevInterest.amount;
         }
       }
       
-      balanceAtMonthEnd = balance;
+      // Round balance to 2 decimal places before calculating interest
+      balanceAtMonthEnd = Math.round(balance * 100) / 100;
       
-      const interestAmount = balanceAtMonthEnd * adminRate;
+      // Calculate interest amount and round to 2 decimal places
+      // Use exact calculation: balance × rate, then round
+      const interestAmount = Math.round(balanceAtMonthEnd * adminRate * 100) / 100;
       
       // Create interest transaction for the last day of the month
+      // Round the balance to 2 decimal places
+      const newBalance = Math.round((balanceAtMonthEnd + interestAmount) * 100) / 100;
       const interestTransaction = {
         id: `admin_interest_${monthKey}`,
         investorId: sortedTransactions[0]?.investorId || '',
@@ -434,7 +681,7 @@ export class AdminReportComponent implements OnInit, OnDestroy {
         date: monthEndDate,
         type: 'interest',
         amount: interestAmount,
-        balance: balanceAtMonthEnd + interestAmount,
+        balance: newBalance,
         description: `Interest (${(adminRate * 100).toFixed(1)}%)`
       };
       

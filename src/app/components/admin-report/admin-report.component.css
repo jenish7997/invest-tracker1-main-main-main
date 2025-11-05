@@ -518,6 +518,11 @@
   padding: 2rem 2rem;
   position: relative;
   overflow: hidden;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
 }
 
 .report-card-header::before {
@@ -566,6 +571,53 @@
       0 0 30px rgba(255, 255, 255, 0.3),
       0 0 40px rgba(255, 255, 255, 0.2);
   }
+}
+
+.difference-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  position: relative;
+  z-index: 1;
+}
+
+.difference-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.difference-value {
+  font-size: 1.1rem;
+  font-weight: 700;
+  padding: 0.25rem 0.75rem;
+  border-radius: 6px;
+  font-family: 'Courier New', monospace;
+}
+
+.difference-value.positive {
+  background: rgba(40, 167, 69, 0.3);
+  color: #90ee90;
+  border: 1px solid rgba(40, 167, 69, 0.5);
+}
+
+.difference-value.negative {
+  background: rgba(220, 53, 69, 0.3);
+  color: #ffb6c1;
+  border: 1px solid rgba(220, 53, 69, 0.5);
+}
+
+.difference-value.zero {
+  background: rgba(108, 117, 125, 0.3);
+  color: #d3d3d3;
+  border: 1px solid rgba(108, 117, 125, 0.5);
 }
 
 /* Stats Grid */
@@ -1300,13 +1352,17 @@
     border-radius: 12px;
     margin-bottom: 1rem;
     text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    align-items: center;
   }
   
   .investor-header .investor-name {
     font-size: 1.8rem;
     font-weight: 800;
     color: #ffffff;
-    margin: 0 0 0.5rem 0;
+    margin: 0;
     text-transform: uppercase;
     letter-spacing: 2px;
     font-family: 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
@@ -1319,6 +1375,20 @@
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     animation: nameGlow 3s ease-in-out infinite alternate;
+  }
+
+  .difference-badge {
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+  }
+
+  .difference-label {
+    font-size: 0.8rem;
+  }
+
+  .difference-value {
+    font-size: 1rem;
+    padding: 0.2rem 0.6rem;
   }
   
   .avg-interest-rate {

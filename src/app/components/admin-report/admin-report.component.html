@@ -92,6 +92,12 @@
   <div *ngFor="let report of reports" class="report-card desktop-only">
     <div class="report-card-header">
       <h2 class="investor-name">{{ report.investorName }}</h2>
+      <div class="difference-badge" *ngIf="report.grownCapitalDifference !== undefined">
+        <span class="difference-label">Difference:</span>
+        <span class="difference-value" [ngClass]="{'positive': report.grownCapitalDifference > 0, 'negative': report.grownCapitalDifference < 0, 'zero': report.grownCapitalDifference === 0}">
+          {{ report.grownCapitalDifference | currency:'INR':'symbol':'1.2-2' }}
+        </span>
+      </div>
     </div>
 
     <!-- Desktop Stats Grid -->
@@ -184,6 +190,12 @@
     <!-- Investor Name Header -->
     <div class="investor-header">
       <h2 class="investor-name">{{ report.investorName }}</h2>
+      <div class="difference-badge" *ngIf="report.grownCapitalDifference !== undefined">
+        <span class="difference-label">Difference:</span>
+        <span class="difference-value" [ngClass]="{'positive': report.grownCapitalDifference > 0, 'negative': report.grownCapitalDifference < 0, 'zero': report.grownCapitalDifference === 0}">
+          {{ report.grownCapitalDifference | currency:'INR':'symbol':'1.2-2' }}
+        </span>
+      </div>
     </div>
     
     <!-- Initial Principal, Interest and Balance Card -->

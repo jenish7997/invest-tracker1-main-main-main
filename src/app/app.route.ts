@@ -13,6 +13,8 @@ import { ReportComponent } from './components/report/report.component';
 import { UserGuard } from './guards/user.guard';
 import { AdminInterestComponent } from './components/admin-interest/admin-interest.component';
 import { AdminReportComponent } from './components/admin-report/admin-report.component';
+import { AdminFundAccountComponent } from './components/admin-fund-account/admin-fund-account.component';
+import { AdminWithdrawComponent } from './components/admin-withdraw/admin-withdraw.component';
 
 export const routes: Routes = [
   { path: 'login', component: LoginComponent },
@@ -26,5 +28,7 @@ export const routes: Routes = [
   { path: 'report', component: ReportComponent, canActivate: [UserGuard] },
   { path: 'admin-interest', component: AdminInterestComponent, canActivate: [AuthGuard] },
   { path: 'admin-report', component: AdminReportComponent, canActivate: [AuthGuard] },
+  { path: 'admin-fund-account', component: AdminFundAccountComponent, canActivate: [AuthGuard] },
+  { path: 'admin-withdraw', component: AdminWithdrawComponent, canActivate: [AuthGuard] },
   { path: '', redirectTo: '/login', pathMatch: 'full' }
 ];
