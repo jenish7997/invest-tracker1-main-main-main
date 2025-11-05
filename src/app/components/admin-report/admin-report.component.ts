@@ -513,7 +513,7 @@ export class AdminReportComponent implements OnInit, OnDestroy {
         type: 'interest',
         amount: interestAmount,
         balance: newBalance,
-        description: `Interest (${(userRate * 100).toFixed(1)}%)`
+        description: `Interest (${(userRate * 100).toFixed(2)}%)`
       };
       
       interestTransactions.push(interestTransaction);
@@ -682,7 +682,7 @@ export class AdminReportComponent implements OnInit, OnDestroy {
         type: 'interest',
         amount: interestAmount,
         balance: newBalance,
-        description: `Interest (${(adminRate * 100).toFixed(1)}%)`
+        description: `Interest (${(adminRate * 100).toFixed(2)}%)`
       };
       
       interestTransactions.push(interestTransaction);
@@ -778,8 +778,8 @@ export class AdminReportComponent implements OnInit, OnDestroy {
       const rate = this.adminInterestRates.get(monthKey);
       
       if (rate !== undefined) {
-        // Convert decimal rate to percentage (e.g., 0.15 -> 15%)
-        const percentage = (rate * 100).toFixed(1);
+        // Convert decimal rate to percentage (e.g., 0.15 -> 15.00%)
+        const percentage = (rate * 100).toFixed(2);
         return `${percentage}%`;
       } else {
         // No rate set for this month - show blank

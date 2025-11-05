@@ -357,8 +357,8 @@ export class ReportComponent implements OnInit, OnDestroy {
       const rate = this.interestRates.get(monthKey);
       
       if (rate !== undefined) {
-        // Convert decimal rate to percentage (e.g., 0.15 -> 15%)
-        const percentage = (rate * 100).toFixed(1);
+        // Convert decimal rate to percentage (e.g., 0.15 -> 15.00%)
+        const percentage = (rate * 100).toFixed(2);
         return `${percentage}%`;
       } else {
         this.logger.warn('No interest rate found for month', { monthKey });
@@ -441,24 +441,33 @@ export class ReportComponent implements OnInit, OnDestroy {
       let balanceAtMonthEnd = 0;
       
       // Reconstruct the balance by walking through all transactions in order
+      // Start fresh from zero for accurate calculation
       let balance = 0;
       
+      // Normalize dates for comparison (set to start of day to avoid time issues)
+      const monthStartNormalized = new Date(year, month - 1, 1, 0, 0, 0, 0);
+      const monthEndNormalized = new Date(year, month, 0, 23, 59, 59, 999);
+      
       // Step 1: Process all non-interest transactions up to the END of this month
+      // Use sortedTransactions instead of transactionsWithInterest for accurate calculation
       // (excluding last-day withdrawals when calculating the CURRENT month's interest)
-      for (const t of transactionsWithInterest) {
+      for (const t of sortedTransactions) {
         const transactionDate = new Date(t.date);
-        const isLastDayOfMonth = transactionDate.getDate() === monthEndDate.getDate() && 
-                                 transactionDate.getMonth() === monthEndDate.getMonth() &&
-                                 transactionDate.getFullYear() === monthEndDate.getFullYear();
+        // Normalize transaction date to start of day for comparison
+        const transactionDateNormalized = new Date(transactionDate.getFullYear(), transactionDate.getMonth(), transactionDate.getDate(), 0, 0, 0, 0);
+        
+        const isLastDayOfMonth = transactionDateNormalized.getDate() === monthEndNormalized.getDate() && 
+                                 transactionDateNormalized.getMonth() === monthEndNormalized.getMonth() &&
+                                 transactionDateNormalized.getFullYear() === monthEndNormalized.getFullYear();
         
         // Only process transactions on or before this month's end
-        if (transactionDate <= monthEndDate) {
+        if (transactionDateNormalized <= monthEndNormalized) {
           if (t.type === 'invest' || t.type === 'deposit') {
             balance += t.amount;
           } else if (t.type === 'withdraw') {
             // For the CURRENT month, exclude last-day withdrawals
             // For PREVIOUS months, include all withdrawals
-            if (!(transactionDate >= monthStartDate && isLastDayOfMonth)) {
+            if (!(transactionDateNormalized >= monthStartNormalized && isLastDayOfMonth)) {
               balance -= t.amount;
             }
           }
@@ -468,16 +477,23 @@ export class ReportComponent implements OnInit, OnDestroy {
       // Step 2: Add interest from previous months (this doesn't include current month interest yet)
       for (const prevInterest of interestTransactions) {
         const interestDate = new Date(prevInterest.date);
-        if (interestDate <= monthEndDate) {
+        // Normalize interest date for comparison
+        const interestDateNormalized = new Date(interestDate.getFullYear(), interestDate.getMonth(), interestDate.getDate(), 0, 0, 0, 0);
+        if (interestDateNormalized <= monthEndNormalized) {
           balance += prevInterest.amount;
         }
       }
       
-      balanceAtMonthEnd = balance;
+      // Round balance to 2 decimal places before calculating interest
+      balanceAtMonthEnd = Math.round(balance * 100) / 100;
       
-      const interestAmount = balanceAtMonthEnd * userRate;
+      // Calculate interest amount and round to 2 decimal places
+      // Use exact calculation: balance × rate, then round
+      const interestAmount = Math.round(balanceAtMonthEnd * userRate * 100) / 100;
       
       // Create interest transaction for the last day of the month
+      // Round the balance to 2 decimal places
+      const newBalance = Math.round((balanceAtMonthEnd + interestAmount) * 100) / 100;
       const interestTransaction = {
         id: `user_interest_${monthKey}`,
         investorId: sortedTransactions[0]?.investorId || '',
@@ -485,8 +501,8 @@ export class ReportComponent implements OnInit, OnDestroy {
         date: monthEndDate,
         type: 'interest',
         amount: interestAmount,
-        balance: balanceAtMonthEnd + interestAmount,
-        description: `Interest (${(userRate * 100).toFixed(1)}%)`
+        balance: newBalance,
+        description: `Interest (${(userRate * 100).toFixed(2)}%)`
       };
       
       interestTransactions.push(interestTransaction);
@@ -501,9 +517,11 @@ export class ReportComponent implements OnInit, OnDestroy {
         if (t.type === 'interest') continue;
         
         if (transactionDate > monthEndDate) {
+          // Round the updated balance to 2 decimal places
+          const updatedBalance = Math.round((t.balance + interestAmount) * 100) / 100;
           transactionsWithInterest[i] = {
             ...t,
-            balance: t.balance + interestAmount
+            balance: updatedBalance
           };
         }
       }
